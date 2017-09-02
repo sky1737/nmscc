@@ -69,16 +69,19 @@ using Tcond = typename _Tcond<X, A, B>::U;
 #pragma region immutable
 template<class T, T ...v>
 struct Immutable
-{};
+{
+    constexpr static u32 $size = u32(sizeof...(v));
+};
 
 template<class T, T v>
 struct Immutable<T, v>
 {
-    constexpr static T $value = v;
+    constexpr static u32 $size  = 1;
+    constexpr static T   $value = v;
 };
 
-template<u32  ...V> using U32 = Immutable<u32, V...>;
-template<i32  ...V> using I32 = Immutable<i32, V...>;
+template<u32  ...V> using U32  = Immutable<u32, V...>;
+template<i32  ...V> using I32  = Immutable<i32, V...>;
 template<bool ...V> using Bool = Immutable<bool, V...>;
 
 template<u32 N, u32 ...V> struct _Seq;
@@ -90,7 +93,7 @@ template<u32 N > constexpr Seq<N> $seq = {};
 
 template<u32 K, class  I, bool ...V> struct _Index;
 template<u32 K, u32 ...I           > struct _Index<K, U32<I...>             > { using U = U32<I...>; };
-template<u32 K, u32 ...I, bool ...V> struct _Index<K, U32<I...>, true, V...> { using U = typename _Index<K + 1, U32<I..., K>, V...>::U; };
+template<u32 K, u32 ...I, bool ...V> struct _Index<K, U32<I...>, true,  V...> { using U = typename _Index<K + 1, U32<I..., K>, V...>::U; };
 template<u32 K, u32 ...I, bool ...V> struct _Index<K, U32<I...>, false, V...> { using U = typename _Index<K + 1, U32<I...   >, V...>::U; };
 
 template<bool ...V> using       Index = typename _Index<0, U32<>, V...>::U;
@@ -496,7 +499,8 @@ protected:
 #pragma endregion
 
 #pragma region exception
-class String;
+template<class Tchar, u32 Isize>
+class TString;
 
 class IException
 {
@@ -506,7 +510,9 @@ protected:
 
 public:
     virtual ~IException() {}
-    virtual void format(String& buf) const {}
+
+    virtual void format(TString<char, 32>& buf) const
+    {}
 };
 
 NMS_API void dump(const IException& e);

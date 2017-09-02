@@ -1,7 +1,6 @@
 #pragma once
 
 #include <nms/core/base.h>
-#include <nms/core/cpp.h>
 #include <nms/core/view.h>
 
 namespace nms

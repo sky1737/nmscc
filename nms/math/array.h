@@ -13,9 +13,12 @@ class Array
 {
   public:
     using base  = View<T, N>;
-    using u32xN = typename base::u32xN;
+    using base::Tsize;
+    using base::Tdims;
 
-    Array(T* data, const u32(&len)[N])
+    static const auto $rank = base::$rank;
+
+    Array(T* data, const Tsize(&len)[$rank])
         : base{ data, len }
         , deleter_{}
     {}
@@ -114,6 +117,10 @@ class Array
             NMS_THROW(EBadType{});
         }
 
+        if (size[0] == 0 && base::$rank == 1) {
+            const auto file_size = is.size();
+            size[0] = (file_size - sizeof(info) - sizeof(size)) / sizeof(T);
+        }
         Array tmp(size);
         is.read(tmp.data(), tmp.count());
         return tmp;

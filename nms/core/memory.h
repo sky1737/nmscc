@@ -25,7 +25,6 @@ NMS_API void  _mzero(void* dat, u64 size);
 NMS_API void  _mcpy (void* dst, const void* src, u64 size);
 NMS_API void  _mmov (void* dst, const void* src, u64 size);
 NMS_API int   _mcmp (const void* lhs, const void* rhs, u64 size);
-
 NMS_API u64   msize (const void* ptr);
 
 class EBadAlloc: public IException
@@ -83,100 +82,5 @@ __forceinline void mmov (T* dst, T* src, u64 n) {
         }
     }
 }
-
-class IPool
-    : public INocopyable
-{
-    struct FreeList {
-        FreeList* next = nullptr;
-    };
-
-    struct TrunkList {
-        TrunkList*  next;
-        u64         size;
-    };
-
-public:
-    IPool() noexcept
-    {}
-
-    IPool(IPool& rhs) noexcept
-        : freelist_(rhs.freelist_)
-        , trunklist_(rhs.trunklist_)
-        , trunksize_(rhs.trunksize_)
-        , memsize_(rhs.memsize_)
-    {
-        rhs.freelist_ = nullptr;
-        rhs.trunklist_ = nullptr;
-    }
-
-    NMS_API IPool(u64 size);
-    NMS_API ~IPool();
-
-    NMS_API void* malloc();
-    NMS_API void free(void* ptr);
-
-protected:
-    FreeList*   freelist_   = nullptr;
-    TrunkList*  trunklist_  = nullptr;
-    u64         trunksize_  = 128 * 1024 * 1024;
-    u64         memsize_    = 0;
-
-    NMS_API void addTrunk();
-};
-
-template<class T>
-class Pool
-    : protected IPool
-{
-public:
-    using base = IPool;
-
-    Pool(): base(sizeof(T))
-    {}
-
-    ~Pool()
-    {}
-
-    Pool(Pool&& rhs) noexcept
-        : base(move(rhs))
-    {}
-
-    T* malloc() {
-        const auto ptr = base::malloc();
-        return reinterpret_cast<T*>(ptr);
-    }
-
-    void free(T* ptr) {
-        base::free(ptr);
-    }
-};
-
-template<class T, u32 N>
-class Pool<T[N]>
-    : protected IPool
-{
-public:
-    using base = IPool;
-
-    Pool(): base(sizeof(T)*N)
-    {}
-
-    ~Pool()
-    {}
-
-    Pool(Pool&& rhs) noexcept
-        : base(move(rhs))
-    {}
-
-    T* malloc() {
-        const auto ptr = base::malloc();
-        return reinterpret_cast<T*>(ptr);
-    }
-
-    void free(T* ptr) {
-        base::free(ptr);
-    }
-};
 
 }

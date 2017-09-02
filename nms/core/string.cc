@@ -4,18 +4,6 @@
 namespace nms
 {
 
-NMS_API String& tlsString() {
-    static thread_local String buf;
-
-    static thread_local auto _init = [&] {
-        buf.reserve(32768);
-        return 0;
-    }();
-    (void)_init;
-
-    return buf;
-}
-
 NMS_API u32 strlen(const char* s) {
     if (s == nullptr) {
         return 0u;

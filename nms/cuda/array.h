@@ -86,7 +86,7 @@ public:
 
     explicit Array(const u32(&len)[N])
         : base(nullptr, len) {
-        auto dat = mnew<T>(base::numel());
+        auto dat = mnew<T>(base::count());
         base::data_ = dat;
         deleter_ = delegate<void()>([=] { mdel(dat); });
     }

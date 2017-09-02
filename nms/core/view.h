@@ -31,9 +31,12 @@ template<class T, u32 N>
 struct View
 {
 #pragma region defines
-    constexpr static const auto $rank = N == 0 ? 1 : N;
+    constexpr static const auto $rank = N;
 
-    using u32xN = Vec<u32, $rank>;
+    using Tdata     = T;
+    using Tsize     = u32;
+    using Trank     = u32;
+    using Tdims     = Vec<Tsize,$rank>;
 
     template<class U, u32 M>
     friend struct View;
@@ -47,74 +50,68 @@ struct View
     __forceinline ~View() = default;
 
     /*! construct view with data, size, stride */
-    __forceinline constexpr View(T* data, const u32(&size)[$rank], const u32(&stride)[$rank])
+    __forceinline constexpr View(Tdata* data, const Tsize(&size)[$rank], const Tsize(&stride)[$rank])
         : data_{ data }, size_{ size }, stride_(stride)
     {}
 
     /*! construct view with data, size */
-    __forceinline constexpr View(T* data, const u32(&size)[$rank])
+    __forceinline constexpr View(Tdata* data, const Tsize(&size)[$rank])
         : data_{ data }, size_{ size }, stride_{ mkStride(size) }
     {}
 
     /*! convert to const View */
-    __forceinline operator View<const T, N>() const noexcept {
+    __forceinline operator View<const Tdata, $rank>() const noexcept {
         return { data_, size_, stride_ };
     }
 
 #pragma endregion
 
 #pragma region properties
-    __forceinline static constexpr auto rank() {
+    __forceinline static constexpr Trank rank() {
         return $rank;
     }
 
     /*! get data pointer */
-    __forceinline T* data() noexcept {
+    __forceinline Tdata* data() noexcept {
         return data_;
     }
 
     /*! get data pointer */
-    __forceinline const T* data() const noexcept {
+    __forceinline const Tdata* data() const noexcept {
         return data_;
     }
 
     /*! get n-dim size */
-    __forceinline auto size() const noexcept {
+    __forceinline Tdims size() const noexcept {
         return size_;
     }
 
     /*! get n-dim stride */
-    __forceinline auto stride() const noexcept {
+    __forceinline Tdims stride() const noexcept {
         return stride_;
     }
 
     /*! get total elements count */
-    __forceinline auto count() const noexcept {
+    __forceinline Tsize count() const noexcept {
         return iprod(Seq<$rank>{}, size_);
-    }
-
-    /*!
-     * get total elements count.
-     * @see count
-     */
-    __forceinline u32 numel() const noexcept {
-        return count();
     }
 
     /*!
      * get idx-dim size
      * @see size
      */
-    __forceinline constexpr auto size(u32 idx) const noexcept {
-        return size_[idx];
+    template<class Tdim>
+    __forceinline constexpr Tsize size(Tdim dim) const noexcept {
+        return size_[dim];
     }
 
     /*!
      * get idx-dim stride
      * @see stride
      */
-    __forceinline constexpr auto stride(u32 idx) const noexcept {
-        return stride_[idx];
+    template<class Tdim>
+    __forceinline constexpr Tsize stride(Tdim dim) const noexcept {
+        return stride_[dim];
     }
 
     /*!
@@ -139,30 +136,30 @@ struct View
     /*!
      * access specified element
      */
-    template<class ...I>
-    __forceinline const T& at(I ...idx) const noexcept {
-        static_assert($all_is<$int,I...>,   "unexpect type");
-        static_assert(sizeof...(I)==$rank,  "unexpect arguments count");
+    template<class ...Tidx>
+    __forceinline const Tdata& at(Tidx ...idx) const noexcept {
+        static_assert($all_is<$int,Tidx...>,    "unexpect type");
+        static_assert(sizeof...(Tidx)==$rank,    "unexpect arguments count");
         return data_[offsets_of(idx...)];
     }
 
     /*!
      * access specified element
      */
-    template<class ...I>
-    __forceinline T& at(I ...idx) noexcept {
-        static_assert($all_is<$int, I...>,  "unexpect type");
-        static_assert(sizeof...(I)==$rank,  "unexpect arguments count");
+    template<class ...Tidx>
+    __forceinline Tdata& at(Tidx ...idx) noexcept {
+        static_assert($all_is<$int, Tidx...>,  "unexpect type");
+        static_assert(sizeof...(Tidx)==$rank,  "unexpect arguments count");
         return data_[offsets_of(idx...)];
     }
 
     /*!
-    * access specified element
-    * @param idx indexs
-    * @see at
-    */
+     * access specified element
+     * @param idx indexs
+     * @see at
+     */
     template<class ...I>
-    __forceinline T& operator()(I ...idx) noexcept {
+    __forceinline Tdata& operator()(I ...idx) noexcept {
         return at(idx...);
     }
 
@@ -172,7 +169,7 @@ struct View
      * @see at
      */
     template<class ...I>
-    __forceinline const T& operator()(I ...idx) const noexcept {
+    __forceinline const Tdata& operator()(I ...idx) const noexcept {
         return at(idx...);
     }
 
@@ -180,60 +177,49 @@ struct View
 
 #pragma region slice
     /*! slice */
-    __forceinline auto slice() const noexcept {
-        return View<const T, $rank>{ data_, size_, stride_ };
+    template<class ...Tidx, u32 ...Icnt>
+    View<const Tdata, Index<(Icnt>1)...>::$size> slice(const Tidx(&...ids)[Icnt]) const noexcept {
+        return _slice(ids...)._select(Index<(Icnt > 1)...>{});
     }
 
     /*! slice */
-    __forceinline auto slice() noexcept {
-        return View<T, $rank>{ data_, size_, stride_ };
-    }
-
-    /*! slice */
-    template<class ...I, u32 ...S>
-    __forceinline auto slice(const I(&...idxs)[S]) const noexcept {
-        static_assert(all((S<=2)...),       "unexpect array size");
-        return _slice(idxs...)._select(Index<(S > 1)...>{} );
-    }
-
-    /*! slice */
-    template<class ...I, u32 ...S>
-    __forceinline auto slice(const I(&...idxs)[S]) noexcept {
-        static_assert(all((S<=2)...),       "unexpect array size");
-        return _slice(idxs...)._select(Index<(S > 1)...>{});
+    template<class ...Tidx, u32 ...Icnt>
+    View<Tdata, Index<(Icnt>1)...>::$size>slice(const Tidx(&...idxs)[Icnt]) noexcept {
+        return _slice(idxs...)._select(Index<(Icnt > 1)...>{});
     }
 
 
     /*!
      * slice the view
-     * @param secs sections
+     * @param ids sections
      * @see slice
      */
-    template<class ...I, u32 ...S >
-    __forceinline auto operator()(const I(&...secs)[S]) noexcept {
-        return slice(secs...);
+    template<class ...Tidx, u32 ...Icnt >
+    View<const Tdata, Index<(Icnt>1)...>::$size> operator()(const Tidx(&...ids)[Icnt]) const noexcept {
+        return _slice(ids...)._select(Index<(Icnt > 1)...>{});
     }
 
     /*!
      * slice the view
-     * @param secs sections
+     * @param ids sections
      * @see slice
      */
-    template<class ...I, u32 ...S >
-    __forceinline auto operator()(const I(&...secs)[S]) const noexcept {
-        return slice(secs...);
+    template<class ...Tidx, u32 ...Icnt >
+    View<Tdata, Index<(Icnt>1)...>::$size> operator()(const Tidx(&...ids)[Icnt]) noexcept {
+        return _slice(ids...)._select(Index<(Icnt > 1)...>{});
     }
+
 #pragma endregion
 
 #pragma region save/load
     __forceinline static u8x4 typeinfo() {
         const auto ch =
-            $is<$uint, T> ? 'u' :
-            $is<$sint, T> ? 'i' :
-            $is<$float,T> ? 'f' :
+            $is<$uint, Tdata> ? 'u' :
+            $is<$sint, Tdata> ? 'i' :
+            $is<$float,Tdata> ? 'f' :
             '?';
 
-        const auto size = sizeof(T);
+        const auto size = sizeof(Tdata);
         const u8x4 val = { u8('$'), u8(ch), u8('0' + size), u8('0' + N) };
 
         return val;
@@ -241,125 +227,253 @@ struct View
 
 #pragma endregion
 
-#pragma region when<N==0>
-    /*!
-     * construct: cstring -> StrView
-     */
-    template<u32 Usize, class = $when<Usize !=0 && N == 0> >
-    __forceinline View(const char(&s)[Usize])
-        : data_(s), size_{ Usize - 1 }, stride_{ 1 }
-    {
-        static_assert(N == 0, "StrView: unexpect arguments");
-    }
-
-    /*!
-     * access specified element
-     * when $rank == 1
-     * @see at
-     */
-    template<class I, class = $when<sizeof(I) != 0 && N == 0> >
-    __forceinline T& operator[](I idx) noexcept {
-        return data_[idx >= 0 ? idx : I(size_[0]) - (0 - idx)];
-    }
-
-    /*!
-     * access specified element
-     * when $rank == 1
-     * @see at
-     */
-    template<class I, class = $when<sizeof(I) != 0 && N == 0> >
-    __forceinline const T& operator[](I idx) const noexcept {
-        return data_[idx >= 0 ? idx : I(size_[0]) - (0 - idx)];
-    }
-
-    /*!
-     * slice({begin, end})
-     * when: N == 1
-     */
-    template<class I, class = $when<sizeof(I) != 0 && N == 0> >
-    __forceinline auto slice(I begin, I end) noexcept {
-        return _slice({ begin, end });
-    }
-
-    /*!
-     * slice({begin, end})
-     * when: N == 1
-     */
-    template<class I, class = $when<sizeof(I) != 0 && N == 0> >
-    __forceinline auto slice(I begin, I end) const noexcept {
-        return _slice({ begin, end });
-    }
-
-#pragma endregion
-
 protected:
-    T*      data_;
-    u32xN   size_;
-    u32xN   stride_;    // stride[0] = capicity
+    Tdata*  data_;
+    Tdims   size_;
+    Tdims   stride_;    // stride[0] = capicity
 
 #pragma region offset_of
     template<u32 Idim>
-    __forceinline constexpr auto offset_of(u32 idx) const noexcept {
+    __forceinline constexpr Tsize offset_of(u32 idx) const noexcept {
         return idx * stride_[Idim];
     }
 
     template<u32 Idim>
-    __forceinline constexpr auto offset_of(i32 idx) const noexcept {
+    __forceinline constexpr Tsize offset_of(i32 idx) const noexcept {
         return (idx >= 0 ? idx : i32(size_[0]) + idx) * stride_[Idim];
     }
 
     template<u32 ...Idim, class ...Tidx>
-    __forceinline constexpr auto offsets_of(U32<Idim...>, Tidx ...idx) const noexcept {
+    __forceinline constexpr Tsize offsets_of(U32<Idim...>, Tidx ...idx) const noexcept {
         return sum(offset_of<Idim>(idx)...);
     }
 
-    template<class ...I>
-    __forceinline constexpr auto offsets_of(I ...idxs) const noexcept {
+    template<class ...Tidx>
+    __forceinline constexpr Tsize offsets_of(Tidx ...idxs) const noexcept {
         return offsets_of(Seq<$rank>{}, idxs...);
     }
 #pragma endregion
 
 #pragma region size_of
     template<u32 Idim, class Tidx>
-    __forceinline constexpr u32 size_of(const Tidx(&)[1]) const noexcept {
-        return 0;
+    __forceinline constexpr Tsize size_of(const Tidx(&)[1]) const noexcept {
+        return 0u;
     }
 
     template<u32 Idim, class Tidx>
-    __forceinline constexpr u32 size_of(const Tidx(&idx)[2]) const noexcept {
-        return shrinkIdx(idx[1], size_[Idim]) - shrinkIdx(idx[0], size_[Idim]) + 1;
+    __forceinline constexpr Tsize size_of(const Tidx(&idx)[2]) const noexcept {
+        return offset_of<Idim>(idx[1]) - offset_of<Idim>(idx[0]) + 1;
     }
 
     template<u32 ...Idim, class ...Tidx, u32 ...Isize>
-    __forceinline constexpr auto sizes_of(U32<Idim...>, const Tidx(&...idxs)[Isize]) const noexcept {
-        return u32xN{size_of<Idim>(idxs)...};
+    __forceinline constexpr Tdims sizes_of(U32<Idim...>, const Tidx(&...idxs)[Isize]) const noexcept {
+        return {size_of<Idim>(idxs)...};
     }
 
     template<class ...Tidx, u32 ...Isize>
-    __forceinline constexpr auto sizes_of(const Tidx(&...idxs)[Isize]) const noexcept {
+    __forceinline constexpr Tdims sizes_of(const Tidx(&...idxs)[Isize]) const noexcept {
         return sizes_of(Seq<$rank>{}, idxs...);
     }
 #pragma endregion
 
 #pragma region _slice
     /* slice */
-    template<class ...Tidx, u32 ...Isize>
-    __forceinline View<T, N> _slice(const Tidx(&...s)[Isize]) noexcept {
+    template<class ...Tidx, u32 ...Icnt>
+    __forceinline View<Tdata, $rank> _slice(const Tidx(&...s)[Icnt]) noexcept {
+        static_assert(all((Icnt <= 2)...), "unexpect array size");
         return { data_ + offsets_of(s[0]...), sizes_of(s...), stride_};
     }
 
     /* slice */
-    template<class ...Tidx, u32 ...Isize>
-    __forceinline constexpr View<const T, N> _slice(const Tidx(&...s)[Isize]) const noexcept {
+    template<class ...Tidx, u32 ...Icnt>
+    __forceinline constexpr View<const Tdata, $rank> _slice(const Tidx(&...s)[Icnt]) const noexcept {
+        static_assert(all((Icnt <= 2)...), "unexpect array size");
         return { data_ + offsets_of(s[0]...), sizes_of(s...), stride_};
     }
 
     /* select dim */
     template<u32 ...I>
-    __forceinline constexpr View<T, u32(sizeof...(I))> _select(U32<I...>) const noexcept {
+    __forceinline constexpr View<Tdata, u32(sizeof...(I))> _select(U32<I...>) const noexcept {
         return { data_, { size_[I]... }, { stride_[I]... } };
     }
 #pragma endregion
+};
+
+template<class T>
+struct View<T, 0>
+{
+#pragma region defines
+    using Tdata = T;
+    using Tsize = u64;
+    using Trank = u32;
+
+    constexpr static const Trank $rank = 0;
+
+    template<class U, u32 M>
+    friend struct View;
+#pragma endregion
+
+#pragma region constructors
+    /* default constructor */
+    __forceinline View() = default;
+
+    /* default destructor */
+    __forceinline ~View() = default;
+
+    /*! construct view with data, size, stride */
+    __forceinline constexpr View(Tdata* data, Tsize size)
+        : data_{ data }, size_{ size }
+    {}
+
+    /*! construct view with data, size, stride */
+    template<u32 Isize>
+    __forceinline constexpr View(Tdata (&data)[Isize])
+        : data_{ data }, size_{ ($is<T, char> || $is<T, const char>) ? Isize-1: Isize } 
+    {}
+
+    /*! convert to const View */
+    __forceinline operator View<const T>() const noexcept {
+        return { data_, size_ };
+    }
+
+#pragma endregion
+
+#pragma region properties
+    __forceinline static constexpr Trank rank() {
+        return $rank;
+    }
+
+    /*! get data pointer */
+    __forceinline Tdata* data() noexcept {
+        return data_;
+    }
+
+    /*! get data pointer */
+    __forceinline const Tdata* data() const noexcept {
+        return data_;
+    }
+
+    /*! get n-dim size */
+    __forceinline Tsize size() const noexcept {
+        return size_;
+    }
+
+    /*! get total elements count */
+    __forceinline Tsize count() const noexcept {
+        return size_;
+    }
+
+    /*!
+    * test if empty (count()==0)
+    * @see count
+    */
+    constexpr __forceinline bool isEmpty() const {
+        return count() == 0;
+    }
+
+#pragma endregion
+
+#pragma region access
+    /*! access specified element */
+    template<class Tidx>
+    __forceinline const Tdata& at(Tidx idx) const noexcept {
+        return data_[offset_of(idx)];
+    }
+
+    /*! access specified element */
+    template<class Tidx>
+    __forceinline Tdata& at(Tidx idx) noexcept {
+        return data_[offset_of(idx)];
+    }
+
+    /*! access specified element */
+    template<class Tidx>
+    __forceinline Tdata& operator()(Tidx idx) noexcept {
+        return at(idx);
+    }
+
+    /*! access specified element */
+    template<class Tidx>
+    __forceinline const Tdata& operator()(Tidx idx) const noexcept {
+        return at(idx);
+    }
+
+    /*! access specified element */
+    template<class Tidx>
+    __forceinline Tdata& operator[](Tidx idx) noexcept {
+        return at(idx);
+    }
+
+    /*! access specified element */
+    template<class Tidx>
+    __forceinline const Tdata& operator[](Tidx idx) const noexcept {
+        return at(idx);
+    }
+#pragma endregion
+
+#pragma region slice
+    /*! slice */
+    template<class Tidx>
+    View<Tdata> slice(Tidx first, Tidx last) noexcept {
+        return { data_ + offset_of(first), offset_of(last) - offset_of(first) + 1 };
+    }
+
+    /*! slice */
+    template<class Tidx>
+    View<const Tdata> slice(Tidx first, Tidx last) const noexcept {
+        return { data_ + offset_of(first), offset_of(last) - offset_of(first) + 1 };
+    }
+
+    /*! slice */
+    template<class Tidx>
+    View<Tdata> operator()(Tidx first, Tidx last) noexcept {
+        return { data_ + offset_of(first), offset_of(last) - offset_of(first) + 1 };
+    }
+
+    /*! slice */
+    template<class Tidx>
+    View<const Tdata> operator()(Tidx first, Tidx last) const noexcept {
+        return { data_ + offset_of(first), offset_of(last) - offset_of(first) + 1 };
+    }
+#pragma endregion
+
+#pragma region save/load
+    __forceinline static u8x4 typeinfo() {
+        const auto ch =
+            $is<$uint,  T> ? 'u' :
+            $is<$sint,  T> ? 'i' :
+            $is<$float, T> ? 'f' :
+            '?';
+        const auto size = sizeof(T);
+        const u8x4 val = { u8('$'), u8(ch), u8('0' + size), u8('0') };
+        return val;
+    }
+
+#pragma endregion
+
+protected:
+    Tdata*  data_;
+    Tsize   size_;
+
+#pragma region offset_of
+    __forceinline constexpr auto offset_of(u32 idx) const noexcept {
+        return idx;
+    }
+
+    __forceinline constexpr auto offset_of(u64 idx) const noexcept {
+        return idx;
+    }
+
+    __forceinline constexpr auto offset_of(i32 idx) const noexcept {
+        return idx >= 0 ? idx : u32(size_) + u32(-idx);
+    }
+
+    __forceinline constexpr auto offset_of(i64 idx) const noexcept {
+        return idx >= 0 ? idx : u64(size_) + u64(-idx);
+    }
+
+#pragma endregion
+
 };
 
 #pragma region iterator
@@ -394,12 +508,6 @@ template<class T, u32 N, class Tsize, class Tstride>
 __forceinline View<T, N> mkView(T* ptr, const Tsize(&size)[N]) {
     return { ptr, size, mkStride(size) };
 }
-
-template<class T, u32 N>
-__forceinline View<T, N> mkView(T* v, const u32(&len)[N]) {
-    return { v, len };
-}
-
 #pragma endregion
 
 /* view is lambda */
@@ -466,32 +574,31 @@ bool operator==(const View<T, 1>& a, const View<T, 1>& b) {
 
 /* check if view not equals */
 template<class T, u32 N>
-bool operator!=(const View<T, N>& a, const View<T, N>& b) {
+bool operator!=(const View<T, N>& a, View<T, N>& b) {
     return !(a == b);
 }
 
-/* check if StrView equals */
-template<u32 N>
-static bool operator==(const StrView& a, const char(&b)[N]) {
-    return a == StrView{ b };
+/* check if view equals */
+template<class T, u32 N>
+static bool operator==(const View<T>& a, T(&b)[N]) {
+    return a == View<T>{ b };
 }
 
 /* check if StrView not equals */
-template<u32 N>
-static bool operator!=(const StrView& a, const char(&b)[N]) {
+template<class T, u32 N>
+static bool operator!=(const View<T>& a, T(&b)[N]) {
     return a != StrView{ b };
 }
 
-
 /* check if StrView equals */
-template<u32 N>
-static bool operator==(const char(&a)[N], const StrView& b) {
+template<class T, u32 N>
+static bool operator==(T(&a)[N], View<T>& b) {
     return StrView{ a } == b;
 }
 
-/* check if StrView not equals */
-template<u32 N>
-static bool operator!=(const char(&a)[N], const StrView& b) {
+/* check if View not equals */
+template<class T, u32 N>
+static bool operator!=(T(&a)[N], View<T>& b) {
     return StrView{ a } != b;
 }
 

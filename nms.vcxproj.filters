@@ -23,9 +23,6 @@
       <Filter>io</Filter>
     </ClInclude>
     <ClInclude Include="nms\math.h" />
-    <ClInclude Include="nms\io\mfile.h">
-      <Filter>io</Filter>
-    </ClInclude>
     <ClInclude Include="nms\serialization\json.h">
       <Filter>serialization</Filter>
     </ClInclude>
@@ -170,6 +167,9 @@
     <ClInclude Include="nms\core\parse.h">
       <Filter>core</Filter>
     </ClInclude>
+    <ClInclude Include="nms\math\fft.h">
+      <Filter>math</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="test">
@@ -223,9 +223,6 @@
       <Filter>io</Filter>
     </ClCompile>
     <ClCompile Include="nms\io\console.cc">
-      <Filter>io</Filter>
-    </ClCompile>
-    <ClCompile Include="nms\io\mfile.cc">
       <Filter>io</Filter>
     </ClCompile>
     <ClCompile Include="nms\serialization\json.cc">
@@ -303,6 +300,9 @@
     </ClCompile>
     <ClCompile Include="nms\core\type.cc">
       <Filter>core</Filter>
+    </ClCompile>
+    <ClCompile Include="nms\math\fft.cc">
+      <Filter>math</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

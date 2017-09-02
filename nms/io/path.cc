@@ -11,7 +11,6 @@ extern "C" {
 }
 
 static StrView _get_usr_dir() {
-    printf("????\n");
     static char exe_path_buf[1024];
 #if defined(NMS_OS_WINDOWS)
     const auto mod = GetModuleHandleA(nullptr);
@@ -102,7 +101,7 @@ NMS_API StrView Path::base() const {
 
 
 NMS_API Path cwd() {
-    char buf[256];
+    char buf[1024];
     auto ptr = ::getcwd(buf, sizeof(buf));
 
     if (ptr == nullptr) {
@@ -119,10 +118,15 @@ NMS_API void chdir(const Path& path) {
         log::error("nms.io.chdir: null path!!");
         NMS_THROW(ESystem(0));
     }
+
     const auto ret = ::chdir(cpath.data());
     
     if (ret != 0) {
-        log::error("nms.io.chdir: failed");
+        log::error("nms.io.chdir: cannot chdir to '{}'", cpath);
+
+        if (!exists(path)) {
+            log::error("nms.io.chdir: '{}' not exists", cpath);
+        }
         NMS_THROW(ESystem());
     }
 
@@ -147,14 +151,22 @@ NMS_API void mkdir(const Path& path) {
 #endif
 
     if (ret != 0) {
-        log::error("nms.io.mkdir: failed");
+        log::error("nms.io.mkdir: cannot mkdir '{}'", cpath);
         NMS_THROW(ESystem());
     }
 }
 
 NMS_API void remove(const Path& path) {
-    auto cpath = path.cstr();
-    ::remove(cpath);
+    const StrView cpath = path;
+
+    if (cpath.count() == 0) {
+        log::error("nms.io.remove: null path");
+        return;
+    }
+    const auto ret = ::remove(cpath.data());
+    if (ret != 0) {
+        log::error("nms.io.remove: cannot remove '{}'", cpath);
+    }
 }
 
 NMS_API bool exists(const Path& path) {
@@ -169,8 +181,15 @@ NMS_API bool exists(const Path& path) {
 }
 
 NMS_API void rename(const Path& oldpath, const Path& newpath) {
-    auto old_cpath = oldpath.cstr();
-    auto new_cpath = newpath.cstr();
-    ::rename(old_cpath, new_cpath);
+    const StrView old_cpath = oldpath;
+    const StrView new_cpath = newpath;
+    if (old_cpath.count() == 0 || new_cpath.count() == 0) {
+        return;
+    }
+
+    const auto ret = ::rename(old_cpath.data(), new_cpath.data());
+    if (ret != 0) {
+        log::error("nms.io.rename: cannot rename '{}' -> '{}'", old_cpath, new_cpath);
+    }
 }
 }

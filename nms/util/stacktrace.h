@@ -1,11 +1,10 @@
 #pragma once
 
 #include <nms/config.h>
+#include <nms/core/string.h>
 
 namespace nms
 {
-
-class String;
 
 class CallStacks
 {

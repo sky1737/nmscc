@@ -10,6 +10,8 @@ class Mutex;
 namespace nms::io::console
 {
 
+NMS_API void goto_line(i32 line);
+NMS_API void progress_bar(f32 percent);
 NMS_API void writes(const StrView texts[], u32 n);
 
 inline void  write(StrView text) {

@@ -7,125 +7,128 @@
 namespace nms
 {
 
-// ┌──┬─┐
-// ├──┼─┤
-// │  │ │
-// └──┴─┘
-
-class String;
-
 NMS_API u32     strlen(const char* s);
-NMS_API StrView cstr(const char* s);
+NMS_API StrView cstr  (const char* s);
 
-/* string */
-class String final
-    : public List<char, 32>
+/* TString */
+template<class Char, u32 Size=32>
+class TString final
+    : public List<Char, Size>
 {
-    using base = nms::List<char, 32>;
+    using Tchar = Char;
+    using base = nms::List<Char, Size>;
+
+    using base::Tsize;
+    using base::Tdata;
 
 public:
 #pragma region constructor
-    /*! construct a empty string */
-    constexpr String() noexcept {
+    /*! construct a empty TString */
+    constexpr TString() noexcept {
     }
 
     /* destructor */
-    ~String() = default;
+    ~TString() = default;
 
-    String(const char* buff, u32 count) {
+    TString(const Tchar buff[], Tsize count) {
         base::appends(buff, count);
     }
 
     /* constructor: redirect to List */
-    template<u32 N>
-    __forceinline String(const char(&s)[N])
-        : String{ s, N - 1 } {
+    template<Tsize N>
+    __forceinline TString(const Tchar(&s)[N])
+        : TString{ s, N - 1 } {
     }
 
-    String(const StrView& rhs)
-        : String(rhs.data(), rhs.count()) {
+    TString(const StrView& rhs)
+        : TString(rhs.data(), rhs.count()) {
     }
 
-    String(const String& rhs)
-        : String{ rhs.data(), rhs.count() }
+    TString(const TString& rhs)
+        : TString{ rhs.data(), rhs.count() }
     {}
 
-#ifdef _M_CEE
-    String(System::String^ str)
-    {
-        const auto cnt = u32(str->Length);
-        resize(cnt);
-        const auto dat = data();
-        for (auto i = 0u; i < cnt; ++i) {
-            dat[i] = char(str[i]);
-        }
-    }
-#endif
 #pragma endregion
 
-    /*!
-     * resize the string
-     */
-    String& resize(u32 n) {
-        reserve(n);
-        size_[0] = n;
+    /*! resize the TString */
+    TString& resize(Tsize n) {
+        base::reserve(n);
+        base::size_ = n;
         return *this;
     }
 
-    /*!
-     * returns a cstring (null terminal)
-     */
-    const char* cstr() const {
+    /*! returns a cstring (null terminal) */
+    const Tchar* cstr() const {
         if (base::count() == 0) {
-            return "";
+            return nullptr;
         }
 
-        auto& self = const_cast<String&>(*this);
-        if (at(count()-1) != '\0') {
+        auto& self = const_cast<TString&>(*this);
+        if (base::at(count()-1) != '\0') {
             const auto oldlen = self.count();
             const auto newlen = oldlen+1;
             self.reserve(newlen);
             self.data()[oldlen] = '\0';
         }
-        return data();
+        return base::data();
     }
 
-    /*!
-     * find the first index of c 
-     */
-    u32 find(char c) const {
-        const auto n = count();
-        for (u32 i = 0; i < n; ++i) {
-            if (at(i) == c) return i;
-        }
-        return n;
+
+    TString& operator+=(View<Tchar> s) {
+        base::appends(s.data(), s.count());
+        return *this;
     }
 
-    auto& operator+=(char c) {
+    TString& operator+=(View<const Tchar> s) {
+        base::appends(s.data(), s.count());
+        return *this;
+    }
+
+    TString& operator+=(Tchar c) {
         base::append(c);
         return *this;
     }
 
-    auto& operator+=(StrView s) {
-        base::appends(s.data(), s.count());
-        return *this;
+    /*! find the first index of c */
+    Tsize find(Tchar c) const {
+        const auto n = base::count();
+        for (Tsize i = 0; i < n; ++i) {
+            if (base::at(i) == c) return i;
+        }
+        return n;
     }
 };
 
-NMS_API String& tlsString();
+using U8String  = TString<char>;
+using U16String = TString<char16_t>;
+using U32String = TString<char32_t>;
+using String    = TString<char>;
+
+template<class Tchar=char>
+TString<Tchar>& tlsString() {
+    static thread_local TString<Tchar> buf ;
+
+    static thread_local auto _init = [&] {
+        buf.reserve(32768);
+        return 0;
+    }();
+    (void)_init;
+
+    return buf;
+}
 
 /**
- * concatenates two strings
+ * concatenates two TStrings
  */
-inline String operator+(StrView a, StrView b) {
-    String c;
+inline U8String operator+(StrView a, StrView b) {
+    U8String c;
     c.reserve(a.count() + b.count() +1);
     c += a;
     c += b;
     return c;
 }
 
-/* split a string into pieces */
+/* split a TString into pieces */
 NMS_API List<StrView> split(StrView str, StrView delimiters);
 
 }

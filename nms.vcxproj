@@ -54,6 +54,7 @@
     <ClCompile Include="nms\cuda\runtime.cc" />
     <ClCompile Include="nms\io\file.cc" />
     <ClCompile Include="nms\math\array.cc" />
+    <ClCompile Include="nms\math\fft.cc" />
     <ClCompile Include="nms\serialization\xml.cc" />
     <ClCompile Include="nms\thread\condvar.cc" />
     <ClCompile Include="nms\thread\mutex.cc" />
@@ -99,7 +100,6 @@
     <ClInclude Include="nms\io\console.h" />
     <ClInclude Include="nms\io\file.h" />
     <ClInclude Include="nms\io\log.h" />
-    <ClInclude Include="nms\io\mfile.h" />
     <ClInclude Include="nms\io\path.h" />
     <ClInclude Include="nms\math.h" />
     <ClInclude Include="nms\math\array.h" />
@@ -107,6 +107,7 @@
     <ClInclude Include="nms\math\blas.h" />
     <ClInclude Include="nms\math\complex.h" />
     <ClInclude Include="nms\math\eye.h" />
+    <ClInclude Include="nms\math\fft.h" />
     <ClInclude Include="nms\math\foreach.h" />
     <ClInclude Include="nms\math\lambda.h" />
     <ClInclude Include="nms\math\linspace.h" />
@@ -131,7 +132,6 @@
     <None Include="docs\index.md" />
     <None Include="docs\test\test.md" />
     <None Include="makefile" />
-    <ClCompile Include="nms\io\mfile.cc" />
     <ClInclude Include="nms\test.h" />
     <ClInclude Include="nms\test\assert.h" />
     <ClInclude Include="nms\test\test.h" />

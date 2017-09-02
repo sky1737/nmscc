@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <nms/core/type.h>
 #include <nms/core/cpp.h>
@@ -203,7 +203,14 @@ __forceinline auto _format_switch(String& buf, StrView fmt, const T& t, Version<
 template<class T>
 __forceinline auto _format_switch(String& buf, StrView fmt, const T& t, Version<0>) -> $when<$is_enum<T>> {
     auto str = mkEnum(t).name();
-    formatImpl(buf, fmt, str);
+    if (str.count() != 0) {
+        formatImpl(buf, fmt, str);
+    }
+    else {
+        buf += typeof<T>().name();
+        buf += ".";
+        formatImpl(buf, fmt, u32(t));
+    }
     return;
 }
 

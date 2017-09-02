@@ -15,6 +15,7 @@
 #include <ctype.h>
 #include <string.h>
 #include <errno.h>
+#include <locale.h>
 
 // posix
 #include <unistd.h>

@@ -2,7 +2,7 @@
 #include <nms/io/log.h>
 #include <nms/io/console.h>
 #include <nms/io/file.h>
-#include <nms/util/system.h>
+#include <nms/thread/mutex.h>
 #include <nms/util/stacktrace.h>
 
 namespace nms::io::log
@@ -20,7 +20,7 @@ NMS_API void setLevel(Level level) {
     gLevel = level;
 }
 
-StrView str_cast(Level level) {
+static StrView to_str(Level level) {
     switch (level) {
     case Level::None:   return "none";
     case Level::Debug:  return "debug";
@@ -33,13 +33,13 @@ StrView str_cast(Level level) {
     return "unknow";
 }
 
-class XmlFile
+class LogFile
 {
 public:
-    XmlFile()
+    LogFile()
     {}
 
-    ~XmlFile() {
+    ~LogFile() {
         if (txtfile_ == nullptr) {
             return;
         }
@@ -50,7 +50,7 @@ public:
         return txtfile_ != nullptr;
     }
 
-    void open(const Path& path, const Path& xslt) {
+    void open(const Path& path) {
         if (txtfile_ != nullptr) {
             close();
         }
@@ -59,29 +59,12 @@ public:
         }
 
         txtfile_ = new io::TxtFile{ path, File::Write };
-
-        // write xml head
-        txtfile_->write(cstr("<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n"));
-
-        // write xslt head
-        if (!xslt.str().isEmpty()) {
-            txtfile_->write("<?xml-stylesheet type=\"text/xsl\" href=\"");
-            txtfile_->write(xslt);
-            txtfile_->write("\"?>\n");
-        }
-
-        // begin log
-        txtfile_->write(cstr("<log>\n"));
     }
-
 
     void close() {
         if (txtfile_ == nullptr) {
             return;
         }
-
-        // end log
-        txtfile_->write(cstr("</log>\n"));
         delete txtfile_;
     }
 
@@ -90,28 +73,23 @@ public:
             return;
         }
 
-        txtfile_->write("  <item>\n");
-        txtfile_->write("    <level>{}</level>\n",      str_cast(level));
-        txtfile_->write("    <time>{}</time>\n",        time);
-        txtfile_->write("    <message>{}</message>\n",  message);
-        txtfile_->write("  </item>\n");
+        LockGuard lock_guard(mutex_);
+        char buff[1024];
+        auto buff_len = snprintf(buff, sizeof(buff), "%8.3f (%s) ", time, to_str(level).data());
+        txtfile_->write(StrView(buff, { u32(buff_len) }));
+        txtfile_->write(message);
         txtfile_->sync();
     }
 
 protected:
-    String          attributes_;
-    io::TxtFile*    txtfile_    = nullptr;
+    Mutex       mutex_;
+    TxtFile*    txtfile_    = nullptr;
 };
 
-String  gXmlPath = {};
-XmlFile gXmlFile = {};
+LogFile gLogFile = {};
 
-NMS_API StrView getXmlPath() {
-    return gXmlPath;
-}
-
-NMS_API void setXmlPath(const Path& path, const Path& xslt) {
-    gXmlFile.open(path, xslt);
+NMS_API void setLogPath(const Path& path) {
+    gLogFile.open(path);
 }
 
 NMS_API void message(Level level, StrView msg) {
@@ -154,8 +132,8 @@ NMS_API void message(Level level, StrView msg) {
     }
 
     // 2. xml
-    if (gXmlFile) {
-        gXmlFile.write(level, time, msg);
+    if (gLogFile) {
+        gLogFile.write(level, time, msg);
     }
 }
 

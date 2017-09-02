@@ -28,14 +28,12 @@ NMS_API void    setLevel(Level level);
 NMS_API Level   getLevel();
 
 /**
- * set xml log file
+ * set log file
  * @param log_path:  the file path
- * @param xsl_path:  the xslt path
  *
- * if path is null, will close xml log file.
- * if xslt is null, will not use xslt
+ * if path is null, will close log file.
  */
-NMS_API void    setXmlPath(const Path& log_path, const Path& xsl_path);
+NMS_API void    setLogPath(const Path& log_path);
 
 /**
  * get xml log file path
