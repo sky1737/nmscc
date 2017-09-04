@@ -1,5 +1,3 @@
-﻿#include <typeinfo>
-
 #include <nms/core/exception.h>
 #include <nms/core/format.h>
 #include <nms/io/log.h>
@@ -44,7 +42,7 @@ NMS_API void ESystem::format(String& buf) const {
 #elif defined(NMS_OS_APPLE)
     // XSI version
     const auto ret = strerror_r(id_, tmp, sizeof(tmp));
-    if (ret != 0) { 
+    if (ret != 0) {
         return;
     }
 #elif defined(NMS_OS_UNIX)

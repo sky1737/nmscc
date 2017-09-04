@@ -31,6 +31,9 @@
 #include <sys/stat.h>
 #include <sys/mman.h>
 
+// stdc++
+#include <typeinfo>
+
 using stat_t = struct stat;
 #endif
 

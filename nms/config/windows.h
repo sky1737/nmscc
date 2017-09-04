@@ -26,6 +26,10 @@
 
 // system
 #include <sys/stat.h>
+
+// stdc++
+#include <typeinfo>
+
 #define NMS_API __declspec(dllexport)
 
 using stat_t = struct ::_stat64;
@@ -41,7 +45,7 @@ static inline int stat(const char* path, stat_t* st) {
 #endif
 
 using thrd_t = void*;
-using mtx_t = void*;
-using cnd_t = void*;
+using mtx_t  = void*;
+using cnd_t  = void*;
 
 #endif

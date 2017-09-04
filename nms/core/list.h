@@ -12,135 +12,34 @@ class File;
 class Path;
 }
 
-template<class Tdata, u32 Icapicity, bool = $is_pod<Tdata> >
-struct _ListBuff;
-
-#pragma region __ListBuff
-template<class T>
-struct _ListBuff<T, 0, true>
-{
-    const T* ptr() const {
-        return nullptr;
-    }
-
-    T* ptr() {
-        return nullptr;
-    }
-};
-
-template<class T>
-struct _ListBuff<T, 0, false>
-{
-    const T* ptr() const {
-        return nullptr;
-    }
-
-    T* ptr() {
-        return nullptr;
-    }
-};
-
-template<class T, u32 N>
-struct _ListBuff<T, N, true> 
-{
-    const T* ptr() const {
-        return ptr_;
-    }
-
-    T* ptr() {
-        return ptr_;
-    }
-
-    T ptr_[N] = {};
-};
-
-template<class T, u32 N>
-struct alignas(T)_ListBuff<T, N, false>
-{
-    constexpr operator T* () const noexcept {
-        return const_cast<T*>(reinterpret_cast<const T*>(buff_));
-    }
-
-    ubyte buff_[N * sizeof(T)] = {};
-};
-#pragma endregion
+template<class T, u32 S = 0>
+class List;
 
 /* list */
-template<class T, u32 S = 0>
-class List
-    : public    View<T>
-    , protected _ListBuff<T, S>
+template<class T>
+class List<T, 0>: public View<T>
 {
-    using base = View<T>;
-    using buff = _ListBuff<T, S>;
-
+    
 public:
-    using base::Tdata;
-    using base::Tsize;
-    static constexpr u32 $BlockSize = 32;           // block  size
-    static constexpr u32 $BuffSize = S;     // buff   size
+    using base  = View<T>;
+    using Tdata = typename base::Tdata;
+    using Tsize = typename base::Tsize;
 
-public:
 #pragma region constructor
+    constexpr List() noexcept = default;
 
-    /*! constructor */
-    constexpr List() noexcept
-        : base{ nullptr, 0 } {
-        base::data_ = buff::ptr();
-    }
-
-    /* destruct */
     ~List() {
-        for (Tsize i = 0u; i < base::size_; ++i) {
-            base::data_[i].~T();
+        if (base::data_ == nullptr) {
+            return;
         }
-        if (base::data_ != buff::ptr()) {
+
+        for(Tsize i = 0; i < size_; ++i) {
+            base::data_[i].~Tdata();
+        }
+
+        if (data_ != buff()) {
             mdel(base::data_);
         }
-        base::size_ = 0;
-        base::data_ = nullptr;
-    }
-
-    /* move construct */
-    List(List&& rhs) noexcept
-        : base(rhs), buff(rhs) {
-        // check if using buff?
-        if (rhs.data_ == rhs.buff::ptr()) {
-            base::data_ = buff::ptr();
-        }
-
-        // clear rhs
-        rhs.data_ = rhs.buff::ptr();
-        rhs.size_ = 0;
-    }
-
-    /* copy construct */
-    List(const List& rhs)
-        : base{ nullptr, 0 } {
-        appends(rhs.data(), rhs.count());
-    }
-
-#pragma endregion
-
-#pragma region operator=
-    /* move assign */
-    List& operator=(List&& rhs) noexcept {
-        if (this != &rhs) {
-            List tmp(move(*this));
-            nms::swap(static_cast<base&>(*this), static_cast<base&>(tmp));
-            nms::swap(static_cast<buff&>(*this), static_cast<buff&>(tmp));
-        }
-        return *this;
-    }
-
-    /* copy assign */
-    /* move assign */
-    List& operator=(const List& rhs) noexcept {
-        if (this != &rhs) {
-            List tmp(rhs);
-            nms::swap(*this, tmp);
-        }
-        return *this;
     }
 #pragma endregion
 
@@ -151,128 +50,133 @@ public:
 
     /* the number of elements that can be held in currently allocated storage */
     Tsize capicity() const noexcept {
-        if (data_ == buff::ptr()) {
-            return $BuffSize;
-        }
-        const auto mem_size = msize(base::data_);
-        const auto count = (mem_size - sizeof(u32)) / sizeof(T);
-        return count;
+        return capicity_;
     }
-
 #pragma endregion
 
 #pragma region method
-    /* clear data */
-    List& clear() {
-        List tmp;
-        swap(*this, tmp);
-        return *this;
-    }
+    List& reserve(Tsize newcnt) {
+        const auto oldcnt = base::size_;
+        const auto oldcap = capicity_;
+        if (newcnt > oldcap) {
+            // caculate new capicity
+            newcnt = newcnt > oldcap + oldcap/16 ? newcnt : oldcap + oldcap/16;
+            const auto newcap = (newcnt +31) / 32 * 32;
+            const auto olddat = data_;
 
-    /*!
-     * reserves storge
-     * if (newlen <= capicity()) { do nothing }
-     * else { new storge is allocated }
-     */
-    List& reserve(Tsize newlen) {
-        const auto oldcap = capicity();
+            // realloc
+            const auto newdat = mnew<Tdata>(newcap);
+            data_ = newdat;
 
-        // do not need realloc
-        if (newlen <= oldcap) {
-            return *this;
-        }
-
-        const auto olddat = data();
-        const auto oldlen = count();
-
-        const auto newcap = (newlen + oldlen / 16 + 63) & ~63ull;
-        const auto newdat = mnew<T>(newcap);
-
-        if (oldlen > 0) {
-            nms::mmov(newdat, olddat, oldlen);
-            if (olddat != buff::ptr()) {
-                nms::mdel(olddat);
+            // move olddat -> newdat
+            for(auto i = 0; i < oldcnt; ++i) {
+                new (&newdat[i])Tdata(static_cast<Tdata&&>(olddat[i]));
             }
+
+            // free old data
+            if (olddat!=nullptr && olddat!=buff()) {
+                mdel(olddat);
+            }
+            
         }
-        base::data_ = newdat;
         return *this;
     }
 
-    /*!
-     * append elements to the end
-     */
+    /*! append elements to the end */
     template<class ...U>
     List& append(U&& ...u) {
-        const auto oldlen = base::count();
-        const auto newlen = oldlen + 1;
-        reserve(newlen);
-        _append(fwd<U>(u)...);
+        reserve(size_ + 1);
+        new(&data_[size_++]) Tdata(fwd<U>(u)...);
         return *this;
     }
 
-    /*!
-    * append elements to the end
-    */
+    /*! append elements to the end */
     template<class ...U>
     List& appends(Tsize cnt, U&& ...u) {
-        const auto oldlen = base::count();
-        const auto newlen = oldlen + cnt;
-        reserve(newlen);
-        base::size_ = newlen;
-
-        auto ptr = base::data();
-        for (auto i = oldlen; i < newlen; ++i) {
-            new(&ptr[i])T(fwd<U>(u)...);
+        reserve(size_ + cnt);
+        for (Tsize i = 0; i < cnt; ++i) {
+            new(&data_[base::size_++])Tdata(fwd<U>(u)...);
         }
         return *this;
     }
 
-
-    /*!
-     * append(copy) elements to the end
-     */
+    /*! append(copy) elements to the end */
     template<class U>
-    List& appends(const U* src, Tsize cnt) {
-        auto old_cnt = base::count();
-        reserve(old_cnt + cnt);
-        base::size_ += cnt;
-
-        // modify data
-        auto ptr = base::data_ + old_cnt;
-        for (u32 i = 0; i < cnt; ++i, ++ptr) {
-            new(ptr)T(src[i]);
+    List& appends(const U dat[], Tsize cnt) {
+        reserve(size_ + cnt);
+        for (Tsize i = 0; i < cnt; ++i) {
+            new(&data_[base::size_++])Tdata(dat[i]);
         }
 
         return *this;
     }
 
-    /*!
-     * append an element to the end
-     */
+    /*! append an element to the end */
     template<class U>
     List& operator+=(U&& u) {
-        append(fwd<U>(u));
+        reserve(size_ + 1);
+        new(&data_[size_++]) Tdata(fwd<U>(u));
         return *this;
     }
 
 protected:
-    /*!
-     * append elements to the end
-     */
-    template<class ...U>
-    List& _append(U&& ...u) {
-        auto ptr = base::data();
-        auto idx = base::size_++;
-        new(&ptr[idx])T(fwd<U>(u)...);
-        return *this;
+    using   base::data_;
+    using   base::size_;
+    Tsize   capicity_;
+
+    const Tdata* buff() const {
+        return static_cast<const void*>(&capicity+1);
     }
-#pragma endregion
 
 #pragma region save/load
-    void save(io::File& os) const;
-    static List load(io::File& is);
-
+    void save(io::File& file)       const;
     void save(const io::Path& path) const;
+
+    static List load(io::File& file);
+    static List load(const io::Path& path);
+#pragma endregion
+};
+
+template<class T, u32 S>
+class List: public List<T, 0>
+{
+    using base = List<T>;
+
+public:
+    static const auto $caicity = S;
+
+    using Tdata = typename base::Tdata;
+    using Tsize = typename base::Tsize;
+    
+#pragma region constructor
+    constexpr List() noexcept
+    {
+        data_       = static_cast<T*>(buff_);
+        capicity_   = $capicity;
+    }
+
+    ~List() = default;
+#pragma endregion
+
+#pragma region property
+    using base::data;
+    using base::size;
+    using base::count;
+
+#pragma endregion
+
+protected:
+    using   base::data_;
+    using   base::size_;
+    using   base::capicity_;
+    u8      buff_[sizeof(Tdata)*$capicity];
+    
+    const Tdata* buff() const {
+        return static_cast<const void*>(&capicity+1);
+    }
+
+#pragma region save/load
+    static List load(io::File& file);
     static List load(const io::Path& path);
 #pragma endregion
 };

@@ -7,27 +7,23 @@
 namespace nms
 {
 
-NMS_API u32     strlen(const char* s);
-NMS_API StrView cstr  (const char* s);
+template<class T, u32 S=0>
+class TString final;
 
 /* TString */
-template<class Char, u32 Size=32>
-class TString final
-    : public List<Char, Size>
+template<class T>
+class TString<T, 0>
+    : public List<T, 0>
 {
-    using Tchar = Char;
-    using base = nms::List<Char, Size>;
-
-    using base::Tsize;
-    using base::Tdata;
+    using Tchar = T;
+    using base  = nms::List<Tchar>;
+    using Tsize = base::Tsize;
+    using Tdata = base::Tdata;
 
 public:
 #pragma region constructor
-    /*! construct a empty TString */
-    constexpr TString() noexcept {
-    }
+    constexpr TString() noexcept = default;
 
-    /* destructor */
     ~TString() = default;
 
     TString(const Tchar buff[], Tsize count) {
@@ -36,7 +32,7 @@ public:
 
     /* constructor: redirect to List */
     template<Tsize N>
-    __forceinline TString(const Tchar(&s)[N])
+    TString(const Tchar(&s)[N])
         : TString{ s, N - 1 } {
     }
 
@@ -50,10 +46,21 @@ public:
 
 #pragma endregion
 
+#pragma region property
+    using base::data;
+    using base::size;
+    using base::count;
+    using base::capicity;
+#pragma endregion
+
+#pragma region method        
+    /*! reserve the storge */
+    using base::reserve;
+
     /*! resize the TString */
     TString& resize(Tsize n) {
-        base::reserve(n);
-        base::size_ = n;
+        reserve(n);
+        size_ = n;
         return *this;
     }
 
@@ -72,7 +79,7 @@ public:
         }
         return base::data();
     }
-
+#pragma endregion 
 
     TString& operator+=(View<Tchar> s) {
         base::appends(s.data(), s.count());
@@ -97,7 +104,24 @@ public:
         }
         return n;
     }
+
+protected:
+    using base::size_;
+    using base::capicity_;
+    using base::data_;
 };
+
+
+
+
+
+
+
+
+
+
+
+
 
 using U8String  = TString<char>;
 using U16String = TString<char16_t>;

@@ -9,8 +9,19 @@ namespace nms
 #pragma region type
 struct Type
 {
-    __forceinline StrView name() const {
+    using Tname = View<const char>;
+    typedef Tname(*Tfunc)();
+
+    Tname name() const {
         return get_name_();
+    }
+
+    constexpr bool operator==(Type x) {
+        return get_name_ == x.get_name_;
+    }
+
+    bool operator!=(Type x) const {
+        return get_name_ != x.get_name_;
     }
 
     template<class T>
@@ -18,22 +29,15 @@ struct Type
         return Type{ _get_name<T> };
     }
 
-    friend __forceinline constexpr bool operator==(Type a, Type b) {
-        return a.get_name_ == b.get_name_;
-    }
-
-    friend __forceinline constexpr bool operator!=(Type a, Type b) {
-        return a.get_name_ != b.get_name_;
-    }
-
 private:
-    StrView(*get_name_)();
+    Tfunc get_name_;
 
-    explicit constexpr Type(StrView(*func_name)())
-        : get_name_(func_name) {}
+    explicit constexpr Type(Tfunc get_name)
+        : get_name_(get_name)
+    {}
 
 #if defined(NMS_CC_MSVC)
-    static constexpr auto funcsig_head_size_ = sizeof("struct nms::View<char const ,0> __cdecl nms::Type::_get_name<") - 1;
+    static constexpr auto funcsig_head_size_ = sizeof("struct nms::ns_view::View<char const ,0> __cdecl nms::Type::_get_name<") - 1;
     static constexpr auto funcsig_tail_size_ = sizeof(">(void)") - 1;
 #elif defined(NMS_CC_CLANG)
     static constexpr auto funcsig_head_size_ = sizeof("static View<const char> nms::Type::_get_name() [T = ") - 1;
@@ -45,21 +49,26 @@ private:
 #   error("unknow c++ compiler")
 #endif
     template<class T>
-    static View<const char> _get_name() {
-        const StrView name = { __PRETTY_FUNCTION__ + funcsig_head_size_, { u32(sizeof(__PRETTY_FUNCTION__) - funcsig_head_size_ - funcsig_tail_size_ - 1) } };
-        return name;
+    static Tname _get_name() {
+        static const Tname full_name = __PRETTY_FUNCTION__;
+        static const Tname type_name = { __PRETTY_FUNCTION__ + funcsig_head_size_, { u32(sizeof(__PRETTY_FUNCTION__) - funcsig_head_size_ - funcsig_tail_size_ - 1) } };
+        return type_name;
     }
 };
 
 template<class T>
-__forceinline constexpr Type typeof() {
+constexpr Type typeof() {
     return Type::make<T>();
 }
 
 template<class T>
-__forceinline constexpr Type typeof(const T&) {
+constexpr Type typeof(const T&) {
     return Type::make<T>();
 }
+
+template<class T>
+constexpr Type $type = Type::make<T>();
+
 #pragma endregion
 
 #pragma region enum

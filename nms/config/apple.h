@@ -34,6 +34,9 @@
 #include <mach-o/dyld.h>
 #include <pthread.h>
 
+// stdc++
+#include <typeinfo>
+
 using stat_t = struct stat;
 
 // c11-threads

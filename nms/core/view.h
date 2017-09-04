@@ -5,27 +5,9 @@
 
 namespace nms
 {
+
 template<class T, u32 N = 0>
 struct View;
-
-using StrView = View<const char>;
-
-template<class Tidx, class Tsize>
-constexpr auto shrinkIdx(Tidx idx, Tsize size) {
-    return idx >= 0 ? Tsize(idx) : size-Tsize(0-idx);
-}
-
-#pragma region mkStride
-template<class Tint, u32 N, u32 ...I>
-__forceinline constexpr auto mkStride(const Tint(&size)[N], U32<I...>) {
-    return Vec<Tint,N>{ iprod(Seq<I>{}, size)... };
-}
-
-template<class Tint, u32 N>
-__forceinline constexpr auto mkStride(const Tint(&size)[N]) {
-    return mkStride(size, Seq<N>{});
-}
-#pragma endregion
 
 template<class T, u32 N>
 struct View
@@ -44,55 +26,55 @@ struct View
 
 #pragma region constructors
     /* default constructor */
-    __forceinline View()  = default;
+    View()  = default;
 
     /* default destructor */
-    __forceinline ~View() = default;
+    ~View() = default;
 
     /*! construct view with data, size, stride */
-    __forceinline constexpr View(Tdata* data, const Tsize(&size)[$rank], const Tsize(&stride)[$rank])
+    constexpr View(Tdata* data, const Tsize(&size)[$rank], const Tsize(&stride)[$rank])
         : data_{ data }, size_{ size }, stride_(stride)
     {}
 
     /*! construct view with data, size */
-    __forceinline constexpr View(Tdata* data, const Tsize(&size)[$rank])
+    constexpr View(Tdata* data, const Tsize(&size)[$rank])
         : data_{ data }, size_{ size }, stride_{ mkStride(size) }
     {}
 
     /*! convert to const View */
-    __forceinline operator View<const Tdata, $rank>() const noexcept {
+    operator View<const Tdata, $rank>() const noexcept {
         return { data_, size_, stride_ };
     }
 
 #pragma endregion
 
 #pragma region properties
-    __forceinline static constexpr Trank rank() {
+    static constexpr Trank rank() {
         return $rank;
     }
 
     /*! get data pointer */
-    __forceinline Tdata* data() noexcept {
+    Tdata* data() noexcept {
         return data_;
     }
 
     /*! get data pointer */
-    __forceinline const Tdata* data() const noexcept {
+    const Tdata* data() const noexcept {
         return data_;
     }
 
     /*! get n-dim size */
-    __forceinline Tdims size() const noexcept {
+    Tdims size() const noexcept {
         return size_;
     }
 
     /*! get n-dim stride */
-    __forceinline Tdims stride() const noexcept {
+    Tdims stride() const noexcept {
         return stride_;
     }
 
     /*! get total elements count */
-    __forceinline Tsize count() const noexcept {
+    Tsize count() const noexcept {
         return iprod(Seq<$rank>{}, size_);
     }
 
@@ -101,7 +83,7 @@ struct View
      * @see size
      */
     template<class Tdim>
-    __forceinline constexpr Tsize size(Tdim dim) const noexcept {
+    constexpr Tsize size(Tdim dim) const noexcept {
         return size_[dim];
     }
 
@@ -110,7 +92,7 @@ struct View
      * @see stride
      */
     template<class Tdim>
-    __forceinline constexpr Tsize stride(Tdim dim) const noexcept {
+    constexpr Tsize stride(Tdim dim) const noexcept {
         return stride_[dim];
     }
 
@@ -118,7 +100,7 @@ struct View
      * test if stride is default
      * @see stride
      */
-    __forceinline constexpr bool isNormal() const {
+    constexpr bool isNormal() const {
         return stride_ == mkStride(size_.data_);
     }
 
@@ -126,7 +108,7 @@ struct View
      * test if empty (count()==0)
      * @see count
      */
-    constexpr __forceinline bool isEmpty() const {
+    constexpr bool isEmpty() const {
         return count() == 0;
     }
 
@@ -208,6 +190,31 @@ struct View
     View<Tdata, Index<(Icnt>1)...>::$size> operator()(const Tidx(&...ids)[Icnt]) noexcept {
         return _slice(ids...)._select(Index<(Icnt > 1)...>{});
     }
+
+#pragma endregion
+
+#pragma region methods
+View permute(const u32(&order)[$rank]) const {
+    Tdims   new_size;
+    Tdims   new_stride;
+
+    for (Trank i = 0; i < $rank; ++i) {
+        new_size[i]     = size_(order[i]);
+        new_stride[i]   = stride_(order[i]);
+    }
+
+    return { data_, new_size, new_stride};
+}
+
+template<u32 M>
+View<Tdata,M> reshape(const u32(&new_size)[M]) const {
+    return { data_, new_size};
+}
+
+template<u32 M>
+View<Tdata,M> reshape(const u32(&new_size)[M], const u32(&new_stride)[M]) const {
+    return { data_, new_size, new_stride};
+}
 
 #pragma endregion
 
@@ -303,11 +310,12 @@ template<class T>
 struct View<T, 0>
 {
 #pragma region defines
-    using Tdata = T;
-    using Tsize = u64;
-    using Trank = u32;
+    constexpr static const u32 $rank = 0;
 
-    constexpr static const Trank $rank = 0;
+    using Tdata = T;
+    using Tsize = u32;
+    using Trank = u32;
+    using Tdims = Vec<u32,$rank>;
 
     template<class U, u32 M>
     friend struct View;
@@ -315,24 +323,24 @@ struct View<T, 0>
 
 #pragma region constructors
     /* default constructor */
-    __forceinline View() = default;
+    constexpr View() = default;
 
     /* default destructor */
-    __forceinline ~View() = default;
+    ~View() = default;
 
     /*! construct view with data, size, stride */
-    __forceinline constexpr View(Tdata* data, Tsize size)
+    constexpr View(Tdata* data, Tsize size)
         : data_{ data }, size_{ size }
     {}
 
     /*! construct view with data, size, stride */
     template<u32 Isize>
-    __forceinline constexpr View(Tdata (&data)[Isize])
-        : data_{ data }, size_{ ($is<T, char> || $is<T, const char>) ? Isize-1: Isize } 
+    constexpr View(Tdata (&data)[Isize])
+        : data_{ data }, size_{ ($is<T, char> || $is<T, const char>) ? Isize-1: Isize }
     {}
 
     /*! convert to const View */
-    __forceinline operator View<const T>() const noexcept {
+    operator View<const T>() const noexcept {
         return { data_, size_ };
     }
 
@@ -344,22 +352,22 @@ struct View<T, 0>
     }
 
     /*! get data pointer */
-    __forceinline Tdata* data() noexcept {
+    Tdata* data() noexcept {
         return data_;
     }
 
     /*! get data pointer */
-    __forceinline const Tdata* data() const noexcept {
+    const Tdata* data() const noexcept {
         return data_;
     }
 
     /*! get n-dim size */
-    __forceinline Tsize size() const noexcept {
-        return size_;
+    Tdims size() const noexcept {
+        return {size_};
     }
 
     /*! get total elements count */
-    __forceinline Tsize count() const noexcept {
+    Tsize count() const noexcept {
         return size_;
     }
 
@@ -367,7 +375,7 @@ struct View<T, 0>
     * test if empty (count()==0)
     * @see count
     */
-    constexpr __forceinline bool isEmpty() const {
+    constexpr bool isEmpty() const {
         return count() == 0;
     }
 
@@ -411,6 +419,24 @@ struct View<T, 0>
     }
 #pragma endregion
 
+#pragma region iterator
+Tdata* begin() {
+    return data();
+}
+
+Tdata* end(View<T>& v) {
+    return data() + count();
+}
+
+const Tdata* begin() const {
+    return data();
+}
+
+const Tdata* end() const {
+    return data() + count();
+}
+#pragma endregion
+
 #pragma region slice
     /*! slice */
     template<class Tidx>
@@ -435,6 +461,31 @@ struct View<T, 0>
     View<const Tdata> operator()(Tidx first, Tidx last) const noexcept {
         return { data_ + offset_of(first), offset_of(last) - offset_of(first) + 1 };
     }
+#pragma endregion
+
+#pragma region method
+int compare(const View<T>& b) const {
+    auto& a = *this;
+
+    if (&a == &b) {
+        return 0;
+    }
+
+    const auto na = a.count();
+    const auto nb = b.count();
+
+    if (na != nb) {
+        return na > nb ? +1 : -1;
+    }
+
+    for (Tsize i = 0; i < na; ++i) {
+        if (a[i] != b[i]) {
+            return a[i] > b[i] ? +1 : -1;
+        }
+    }
+    return 0;
+}
+
 #pragma endregion
 
 #pragma region save/load
@@ -476,130 +527,22 @@ protected:
 
 };
 
-#pragma region iterator
-template<class T>
-auto begin(View<T>& v) {
-    return v.data();
-}
-
-template<class T>
-auto end(View<T>& v) {
-    return v.data() + v.count();
-}
-
-template<class T>
-auto begin(const View<T>& v) {
-    return v.data();
-}
-
-template<class T>
-auto end(const View<T>& v) {
-    return v.data() + v.count();
-}
-#pragma endregion
-
-#pragma region mkView
-template<class T, u32 N, class Tsize, class Tstride>
-__forceinline View<T, N> mkView(T* ptr, const Tsize(&size)[N], const Tstride(&stride)[N]) {
+#pragma region make
+template<class T, u32 N>
+View<T, N> mkView(T* ptr, const u32(&size)[N], const u32(&stride)[N]) {
     return { ptr, size, stride };
 }
 
-template<class T, u32 N, class Tsize, class Tstride>
-__forceinline View<T, N> mkView(T* ptr, const Tsize(&size)[N]) {
-    return { ptr, size, mkStride(size) };
+template<class T, u32 N>
+View<T, N> mkView(T* ptr, const u32(&size)[N]) {
+    return { ptr, size };
 }
+
+template<class T, u32 S>
+View<T> mkView(T(&data)[S]) {
+    return {data};
+}
+
 #pragma endregion
-
-/* view is lambda */
-template<class T, u32 N>
-__forceinline auto toLambda(const View<T,N>& val) {
-    return val;
-}
-
-/* reshape */
-template<class T, u32 N, u32 M>
-__forceinline auto reshape(View<T, N> view, const u32(&new_size)[M]) {
-    return mkView(view.dat(), new_size);
-}
-
-/* reshape */
-template<class T, u32 N, u32 M>
-__forceinline auto reshape(View<T, N> view, const u32(&new_size)[M], const u32(&new_stride)[M]) {
-    return mkView(view.data(), new_size, new_stride);
-}
-
-/* premute */
-template<class T, u32 N>
-auto permute(const View<T, N> &view, const u32(&order)[N]) {
-    u32 new_size[N];
-    u32 new_stride[N];
-
-    for (u32 i = 0; i < N; ++i) {
-        new_size[i]     = view.size(order[i]);
-        new_stride[i]   = view.stride(order[i]);
-    }
-    return mkView(const_cast<T*>(view.data()), new_size, new_stride);
-}
-
-
-/* check if view equals */
-template<class T>
-bool operator==(const View<T, 0>& a, const View<T, 0>& b) {
-    if (&a == &b)               return true;
-    if (a.size() != b.size())   return false;
-
-    const auto size = a.size();
-    for (u32 i = 0; i < size[0]; ++i) {
-        if (a(i) != b(i)) {
-            return false;
-        }
-    }
-    return true;
-}
-
-/* check if view equals */
-template<class T>
-bool operator==(const View<T, 1>& a, const View<T, 1>& b) {
-    if (&a == &b)               return true;
-    if (a.size() != b.size())   return false;
-
-	const auto size = a.size();
-    for (u32 i = 0; i < size[0]; ++i) {
-        if (a(i) != b(i)) {
-            return false;
-        }
-    }
-    return true;
-}
-
-/* check if view not equals */
-template<class T, u32 N>
-bool operator!=(const View<T, N>& a, View<T, N>& b) {
-    return !(a == b);
-}
-
-/* check if view equals */
-template<class T, u32 N>
-static bool operator==(const View<T>& a, T(&b)[N]) {
-    return a == View<T>{ b };
-}
-
-/* check if StrView not equals */
-template<class T, u32 N>
-static bool operator!=(const View<T>& a, T(&b)[N]) {
-    return a != StrView{ b };
-}
-
-/* check if StrView equals */
-template<class T, u32 N>
-static bool operator==(T(&a)[N], View<T>& b) {
-    return StrView{ a } == b;
-}
-
-/* check if View not equals */
-template<class T, u32 N>
-static bool operator!=(T(&a)[N], View<T>& b) {
-    return StrView{ a } != b;
-}
 
 }
