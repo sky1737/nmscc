@@ -3,8 +3,6 @@
 #include <nms/core/type.h>
 #include <nms/core/trait.h>
 
-#include <new>
-
 #if !defined(_LIBCPP_NEW) && !defined(_NEW_) && !defined(_NEW)
 #define NMS_NEW
 #endif

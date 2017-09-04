@@ -39,10 +39,6 @@ namespace nms::cuda
 class Program;
 class Module;
 
-
-template<class T, u32 N=1>
-struct View;
-
 namespace device
 {
 template<class T, u32 N = 1>

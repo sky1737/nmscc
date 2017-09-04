@@ -18,6 +18,9 @@ enum class Level
 
 extern Level gLevel;
 
+/* get string buff */
+NMS_API String& gStrBuf();
+
 /* show log message */
 NMS_API void    message(Level level, StrView s);
 
@@ -42,7 +45,7 @@ NMS_API StrView getXmlPath();
 
 template<class ...T>
 __forceinline void message(Level level, StrView fmt, const T& ...args) {
-    auto& buf = tlsString();
+    auto& buf = gStrBuf();
     buf.resize(0);
     sformat(buf, fmt, args...);
     message(level, buf);

@@ -12,7 +12,7 @@ extern "C"
 }
 
 static void* dlopen(const char* path, int mode) {
-    auto ret = LoadLibraryA(path);
+    auto ret = ::LoadLibraryA(path);
     (void)mode;
     if (ret == INVALID_HANDLE_VALUE) {
         ret = nullptr;

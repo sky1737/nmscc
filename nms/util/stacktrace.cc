@@ -83,7 +83,7 @@ NMS_API void CallStacks::init() {
 
 NMS_API void CallStacks::Stack::format(String& buf) const {
     if (ptr == nullptr) {
-        buf += cstr("<null>");
+        buf += StrView("<null>");
         return;
     }
 
@@ -94,10 +94,10 @@ NMS_API void CallStacks::Stack::format(String& buf) const {
 
     auto ret = dladdr(ptr, &info_ext.info);
     if (ret == 0) {
-        buf += cstr("<unknow>");
+        buf += StrView("<unknow>");
         return;
     }
-    auto name = cstr(info_ext.info.dli_sname);
+    auto name = StrView{ info_ext.info.dli_sname, u32(strlen(info_ext.info.dli_sname)) };
 
 #ifdef NMS_CC_MSVC
     buf += name;
@@ -106,14 +106,14 @@ NMS_API void CallStacks::Stack::format(String& buf) const {
     int status = 0;
     auto cxx_buff = abi::__cxa_demangle(name.data(), nullptr, &length, &status);
     if (status == 0) {
-        buf += cstr(cxx_buff);
+        buf += StrView{ cxx_buff, strlen(cxx_buff) };
         ::free(cxx_buff);
     }
     else if (cxx_buff != nullptr) {
-        buf += cstr(cxx_buff);
+        buf += StrView{ cxx_buff, strlen(cxx_buff) };
     }
     else {
-        buf += cstr("<empty>");
+        buf += StrView("<empty>");
     }
 #endif
 }
@@ -123,12 +123,12 @@ nms_test(stacktrace) {
     CallStacks stacks;
     auto cnt = min(64u, stacks.count());
 
-    String buff = "nms.Stack.backtrace:";
+    U8String<4096> buff = "nms.Stack.backtrace:";
     for (u32 i = 0; i < cnt; ++i) {
         auto stack = stacks[i];
         i + 1 < cnt
-            ? sformat(buff, "\n  ├─{:2}: {}", i, stack)
-            : sformat(buff, "\n  └─{:2}: {}", i, stack);
+            ? sformat(buff, u8"\n  ├─{:2}: {}", i, stack)
+            : sformat(buff, u8"\n  └─{:2}: {}", i, stack);
     }
     io::log::info(buff);
 }

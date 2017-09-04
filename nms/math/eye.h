@@ -7,16 +7,12 @@ namespace nms::math
 
 /* Eye */
 template<class T>
-struct Eye
+struct Eye: IView<T, 0>
 {
 public:
-    static const constexpr auto $rank = 0u;
+    using Tstep = Eye;
 
     constexpr Eye() = default;
-
-    static constexpr u32 rank() {
-        return $rank;
-    }
 
     template<class I>
     u32 size(I /*idx*/) const noexcept {
@@ -39,16 +35,6 @@ public:
         return T(1);
     }
 };
-
-template<class T>
-constexpr auto toLambda(const Eye<T>& val) {
-    return val;
-}
-
-template<class T>
-constexpr auto veye() {
-    return Eye<T>{};
-}
 
 template<class T>
 constexpr auto eye() {

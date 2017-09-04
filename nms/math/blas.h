@@ -1,12 +1,12 @@
 #pragma once
 
 #include <nms/math/base.h>
-#include <nms/math/lambda.h>
+#include <nms/math/view.h>
 
 namespace nms::math
 {
 
-inline namespace blas
+namespace blas
 {
 
 template<class F, class R, class V>

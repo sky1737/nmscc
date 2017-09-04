@@ -81,8 +81,8 @@ struct Testor
                 const auto stacks_cnt = stacks.count();
                 for (auto i = 0u; i < stacks_cnt; ++i) {
                     (i + 1 != stacks_cnt)
-                        ? sformat(str, cstr("\t ├─{:2}: {}\n"), i, stacks[i])
-                        : sformat(str, cstr("\t └─{:2}: {}"),   i, stacks[i]);
+                        ? sformat(str, StrView(u8"\t ├─{:2}: {}\n"), i, stacks[i])
+                        : sformat(str, StrView(u8"\t └─{:2}: {}"),   i, stacks[i]);
                 }
                 console::writeln(str);
             }

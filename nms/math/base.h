@@ -131,4 +131,12 @@ struct Atan     { template<class T> static auto run(T t) noexcept { return atan(
 // [pow](x, y)
 struct Pow      { template<class X, class Y> auto operator()(X x, Y y) const noexcept { return pow(x, y); } };
 
+// [+-*/]= 
+struct Ass2 { template<class Y, class X> auto operator()(Y& y, const X& x) noexcept { return y = x; } };
+struct Add2 { template<class Y, class X> auto operator()(Y& y, const X& x) noexcept { return y += x; } };
+struct Sub2 { template<class Y, class X> auto operator()(Y& y, const X& x) noexcept { return y -= x; } };
+struct Mul2 { template<class Y, class X> auto operator()(Y& y, const X& x) noexcept { return y *= x; } };
+struct Div2 { template<class Y, class X> auto operator()(Y& y, const X& x) noexcept { return y /= x; } };
+
+
 }

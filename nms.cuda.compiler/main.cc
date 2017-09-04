@@ -20,9 +20,9 @@ int main(int argc, const char* argv[]) {
     StrView ptx_path("nms.cuda.program.ptx");
     String  srcs(nms_cuda_kernel_src);
     for (auto i = 1; i < argc; ++i) {
-        auto path = cstr(argv[i]);
+        auto path = StrView{ argv[i], strlen(argv[i]) };
         if (path == "-o" && i + 1 < argc) {
-            ptx_path = cstr(argv[i + 1]);
+            ptx_path = StrView{ argv[i + 1], strlen(argv[i + 1]) };
             i += 2;
             continue;
         }

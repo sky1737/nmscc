@@ -52,12 +52,12 @@ protected:
 /**
  * cuda-foreach-executor
  */
-struct ForeachExecutor
+struct Texec
 {
 public:
     template<class Tfunc, class Tret, class Targ>
-    static void run(Tfunc func, Tret& ret, const Targ& arg) {
-        _run(func, ret, arg, Version<1>{});
+    static void foreach(Tfunc func, Tret& ret, const Targ& arg) {
+        _foreach(func, ret, arg, Version<1>{});
     }
 
     /* add func */
@@ -74,19 +74,19 @@ protected:
 private:
     /* run: try copy, than invoke */
     template<class T, u32 N>
-    static void _run(Ass2 func, const nms::View<T, N>& dst, const nms::View<T, N>& src, Version<1>) {
+    static void _foreach(Ass2 func, const nms::View<T, N>& dst, const nms::View<T, N>& src, Version<1>) {
         if (dst.isNormal() && src.isNormal()) {
             auto count = dst.count();
             cuda::mcpy(const_cast<T*>(dst.data()), src.data(), count);
         }
         else {
-            _run(func, dst, src, Version<0>{});
+            _foreach(func, dst, src, Version<0>{});
         }
     }
 
     /* run: redirect to invoke */
     template<class Tfunc, class Tret, class Targ>
-    static void _run(Tfunc func, const Tret& ret, const Targ& arg, Version<0>) {
+    static void _foreach(Tfunc func, const Tret& ret, const Targ& arg, Version<0>) {
         static auto fid  = nms::static_run< &add_func<Tfunc, Tret, Targ>, Tfunc(Tret, Targ)>();
         static auto kid  = _get_kernel(fid);
         static auto&mod  = sModule();
@@ -102,15 +102,15 @@ private:
     NMS_API static u32 _add_func(StrView func, StrView ret_type, StrView arg_type);
 };
 
-inline ForeachExecutor operator||(const cuda::ForeachExecutor&, const cuda::ForeachExecutor&) {
+inline cuda::Texec operator||(const cuda::Texec&, const cuda::Texec&) {
     return {};
 }
 
-inline ForeachExecutor operator||(const math::ForeachExecutor&, const cuda::ForeachExecutor&) {
+inline cuda::Texec operator||(const math::Texec&, const cuda::Texec&) {
     return {};
 }
 
-inline ForeachExecutor operator||(const cuda::ForeachExecutor&, const math::ForeachExecutor&) {
+inline cuda::Texec operator||(const cuda::Texec&, const math::Texec&) {
     return {};
 }
 

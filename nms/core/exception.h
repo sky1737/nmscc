@@ -1,7 +1,6 @@
 #pragma once
 
 #include <nms/core/base.h>
-#include <nms/util/stacktrace.h>
 
 namespace nms
 {
@@ -11,9 +10,9 @@ class ESystem;
 
 class CallStacks;
 NMS_API const CallStacks& gExceptionStacks();
-NMS_API void gSetExceptionStacks(CallStacks&&);
+NMS_API void  setExceptionStacks(CallStacks&&);
 
-#define NMS_THROW(...)  nms::gSetExceptionStacks(nms::CallStacks{}); throw(__VA_ARGS__)
+#define NMS_THROW(...)  nms::setExceptionStacks(nms::CallStacks{}); throw(__VA_ARGS__)
 
 class ESystem: public IException
 {

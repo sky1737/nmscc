@@ -126,11 +126,11 @@ NMS_API i32 NodeEx::add(i32 root, i32 prev, const Node& val) {
     if (val.type() == Type::string) {
         lst_[0].size_ += u32(val.size());
     }
-    return xpos;
+    return i32(xpos);
 }
 
 NMS_API i32 NodeEx::add(i32 root, i32 prev, StrView key, const Node& val) {
-    auto xpos = lst_.count() + 1;
+    auto xpos = i32(lst_.count() + 1);
     if (xpos == 1) {
         lst_.append(Node{ Type::null, 0 });
         this->idx_ = 1;
@@ -147,15 +147,15 @@ NMS_API i32 NodeEx::add(i32 root, i32 prev, StrView key, const Node& val) {
         lst_[prev - 0].next_ = offset;
         lst_[prev - 1].next_ = offset;
     }
-    lst_[0].size_ += key.count() + u32(val.size());
+    lst_[0].size_ += Node::Tsize(key.count() + u32(val.size()));
     return xpos;
 }
 
 NMS_API void NodeEx::format(String& buf, StrView fmt) const {
-    if (fmt == "json") {
+    if (fmt == StrView("json")) {
         json::formatImpl(buf, *this, fmt);
     }
-    else if (fmt == "xml") {
+    else if (fmt == StrView("xml")) {
         xml::formatImpl(buf, *this, fmt);
     }
     else {

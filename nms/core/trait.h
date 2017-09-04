@@ -103,4 +103,5 @@ template<class T>   struct Is<$float,   T> { static constexpr auto $value = $is<
 template<class T>   struct Is<$number,  T> { static constexpr auto $value = $is<$int,T>     || $is<$float,T>;   };
 #pragma endregion
 
+#
 }

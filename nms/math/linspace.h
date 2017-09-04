@@ -8,8 +8,11 @@ namespace nms::math
 /* liner */
 template<class T, u32 N>
 struct Linespace
+    : public IView<T, N>
 {
-    using TxN = Vec<T, N>;
+    using Tview = Linespace;
+    using Tstep = Vec<T, N>;
+
     constexpr static const auto $rank = N;
 
     Linespace(const T(&step)[N])
@@ -39,16 +42,11 @@ struct Linespace
     }
 
 private:
-    TxN step_;
+    Tstep   step_;
 };
 
-template<class T, u32 N>
-constexpr auto toLambda(const Linespace<T, N>& v) {
-    return v;
-}
-
 template<class T, class ...U>
-constexpr auto vlins(const T& t, const U& ...u) {
+constexpr auto lins(const T& t, const U& ...u) {
     return Linespace<T, u32(1 + sizeof...(U))>({ T(t), T(u)... });
 }
 

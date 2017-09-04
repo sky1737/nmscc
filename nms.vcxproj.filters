@@ -85,12 +85,6 @@
     <ClInclude Include="nms\math\eye.h">
       <Filter>math</Filter>
     </ClInclude>
-    <ClInclude Include="nms\math\foreach.h">
-      <Filter>math</Filter>
-    </ClInclude>
-    <ClInclude Include="nms\math\lambda.h">
-      <Filter>math</Filter>
-    </ClInclude>
     <ClInclude Include="nms\math\linspace.h">
       <Filter>math</Filter>
     </ClInclude>
@@ -131,15 +125,6 @@
     <ClInclude Include="nms\core\base.h">
       <Filter>core</Filter>
     </ClInclude>
-    <ClInclude Include="nms\config\apple.h">
-      <Filter>config</Filter>
-    </ClInclude>
-    <ClInclude Include="nms\config\unix.h">
-      <Filter>config</Filter>
-    </ClInclude>
-    <ClInclude Include="nms\config\windows.h">
-      <Filter>config</Filter>
-    </ClInclude>
     <ClInclude Include="nms\cuda\array.h">
       <Filter>cuda</Filter>
     </ClInclude>
@@ -169,6 +154,18 @@
     </ClInclude>
     <ClInclude Include="nms\math\fft.h">
       <Filter>math</Filter>
+    </ClInclude>
+    <ClInclude Include="nms\config\posix.h">
+      <Filter>config</Filter>
+    </ClInclude>
+    <ClInclude Include="nms\config\stdc.h">
+      <Filter>config</Filter>
+    </ClInclude>
+    <ClInclude Include="nms\math\view.h">
+      <Filter>math</Filter>
+    </ClInclude>
+    <ClInclude Include="nms\core\math.h">
+      <Filter>core</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

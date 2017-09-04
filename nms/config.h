@@ -5,14 +5,11 @@
 /* check Operating System */
 #if defined(_WIN32)
 #   define NMS_OS_WINDOWS           // check if os == windows
-#   include <nms/config/windows.h>
 #elif defined(__APPLE__)
 #   define NMS_OS_APPLE             // check if os == macos
 #   define NMS_OS_UNIX              // check if os == macos
-#   include <nms/config/apple.h>
 #elif defined(__unix__)
 #   define NMS_OS_UNIX              // check if os == linux
-#   include <nms/config/unix.h>
 #endif
 
 /* check compilier */
@@ -30,7 +27,11 @@
 
 #ifndef NMS_API
 #if defined(NMS_CC_MSVC)
+#if defined NMS_BUILD
+#   define NMS_API __declspec(dllexport)
+#else
 #   define NMS_API __declspec(dllimport)
+#endif
 #elif defined(NMS_CC_CLANG)
 #   define NMS_API __attribute__((visibility("default")))
 #else
@@ -42,6 +43,12 @@
 #   define NMS_ABI extern "C" NMS_API
 #endif
 #pragma endregion
+
+#ifdef NMS_BUILD
+#include <nms/config/stdc.h>
+#include <nms/config/posix.h>
+#include <typeinfo>
+#endif
 
 #include <stddef.h>
 #include <stdint.h>

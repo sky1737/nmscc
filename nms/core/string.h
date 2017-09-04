@@ -7,18 +7,21 @@
 namespace nms
 {
 
-template<class T, u32 S=0>
-class TString final;
+NMS_API u32 strlen(const char* s);
+
+template<class T, u32 N=0>
+class TString;
 
 /* TString */
 template<class T>
-class TString<T, 0>
-    : public List<T, 0>
+class TString<T, 0>: public List<T, 0>
 {
+public:
     using Tchar = T;
-    using base  = nms::List<Tchar>;
-    using Tsize = base::Tsize;
-    using Tdata = base::Tdata;
+    using base  = List<Tchar>;
+    using Tsize = typename base::Tsize;
+    using Tdata = typename base::Tdata;
+    using Tview = View<const T>;
 
 public:
 #pragma region constructor
@@ -36,7 +39,7 @@ public:
         : TString{ s, N - 1 } {
     }
 
-    TString(const StrView& rhs)
+    TString(const Tview& rhs)
         : TString(rhs.data(), rhs.count()) {
     }
 
@@ -44,13 +47,26 @@ public:
         : TString{ rhs.data(), rhs.count() }
     {}
 
+    TString& operator=(const Tview& s) {
+        base::size_ = 0;
+        *this += s;
+        return *this;
+    }
+
+    template<u32 SN>
+    TString& operator=(const Tchar(&s)[SN]) {
+        base::size_ = 0;
+        *this += Tview{ s };
+        return *this;
+    }
+
 #pragma endregion
 
 #pragma region property
     using base::data;
     using base::size;
     using base::count;
-    using base::capicity;
+    using base::capacity;
 #pragma endregion
 
 #pragma region method        
@@ -81,12 +97,12 @@ public:
     }
 #pragma endregion 
 
-    TString& operator+=(View<Tchar> s) {
+    TString& operator+=(const View<Tchar>& s) {
         base::appends(s.data(), s.count());
         return *this;
     }
 
-    TString& operator+=(View<const Tchar> s) {
+    TString& operator+=(const View<const Tchar>& s) {
         base::appends(s.data(), s.count());
         return *this;
     }
@@ -107,50 +123,91 @@ public:
 
 protected:
     using base::size_;
-    using base::capicity_;
+    using base::capacity_;
     using base::data_;
 };
 
+/* TString */
+template<class T, u32 N>
+class TString: public TString<T>
+{
+public:
+    using Tchar = T;
+    using base  = TString<T, 0>;
+    using Tsize = typename base::Tsize;
+    using Tdata = typename base::Tdata;
+    using Tview = View<const T>;
+
+    static const auto $capicity = N;
+
+public:
+#pragma region constructor
+    constexpr TString() noexcept {
+        base::data_     = buff_;
+        base::capacity_ = $capicity;
+    }
+
+    ~TString()
+    {}
+
+    TString(const Tchar buff[], Tsize count)
+        : TString{}
+    {
+        base::appends(buff, count);
+    }
+
+    /* constructor: redirect to List */
+    template<Tsize SN>
+    TString(const Tchar(&s)[SN])
+        : TString{ s, SN - 1 }
+    {}
+
+    TString(const Tview& rhs)
+        : TString(rhs.data(), rhs.count())
+    {}
+
+    TString(TString&& rhs) noexcept
+        : TString{}
+    {
+        size_ = rhs.size_;
+        if (rhs.data_ == rhs.buff_) {
+            data_ = buff_;
+            for (u32 i = 0; i < $capicity; ++i) {
+                buff_[i] = rhs.buff_[i];
+            }
+        }
+        else {
+            data_ = rhs.data_;
+        }
 
 
+        rhs.data_ = nullptr;
+    }
+
+    TString(const TString& rhs)
+        : TString{ rhs.data(), rhs.count() }
+    {}
 
 
+    TString& operator=(const Tview& s) {
+        base::operator=(s);
+        return *this;
+    }
 
+    template<u32 SN>
+    TString& operator=(const Tchar(&s)[SN]) {
+        base::operator=(s);
+        return *this;
+    }
 
+#pragma endregion
 
-
-
-
-
-
-using U8String  = TString<char>;
-using U16String = TString<char16_t>;
-using U32String = TString<char32_t>;
-using String    = TString<char>;
-
-template<class Tchar=char>
-TString<Tchar>& tlsString() {
-    static thread_local TString<Tchar> buf ;
-
-    static thread_local auto _init = [&] {
-        buf.reserve(32768);
-        return 0;
-    }();
-    (void)_init;
-
-    return buf;
-}
-
-/**
- * concatenates two TStrings
- */
-inline U8String operator+(StrView a, StrView b) {
-    U8String c;
-    c.reserve(a.count() + b.count() +1);
-    c += a;
-    c += b;
-    return c;
-}
+protected:
+    using base::size_;
+    using base::capacity_;
+    using base::data_;
+    Tchar buff_[$capicity] = {};
+};
 
 /* split a TString into pieces */
 NMS_API List<StrView> split(StrView str, StrView delimiters);

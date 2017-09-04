@@ -142,7 +142,7 @@ NMS_API u64 fsize(int fid) {
 #pragma region unittest
 nms_test(file) {
     Array<i8, 2> a({ 256u, 4u });
-    a <<= vlins<i8>(1, 1);
+    a <<= lins<i8>(1, 1);
     File file("nms.io.file.dat", File::Write);
     file.write(a);
 }

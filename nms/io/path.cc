@@ -40,15 +40,15 @@ static StrView _get_usr_dir() {
     return StrView{ usr_path_buf, {u32(path_len)} };
 }
 
-NMS_API void Path::init(StrView str) {
+NMS_API void Path::init(const StrView& str) {
     if (str.count() >=2  && str[0] == '#' && str[1] == '/') {
         static auto usr_dir = _get_usr_dir();
-        str_ = usr_dir;
+        str_ += usr_dir;
         auto   sub_path = str.slice(2, -1);
         str_ += sub_path;
     }
     else {
-        str_ = str;
+        str_ += str;
     }
     str_.cstr();
 }

@@ -56,12 +56,12 @@ void formatNode(String& buf, const NodeEx& node, i32 level = 0) {
                 formatNode(buf, val, level + 1);
                 buf += "\n";
                 buf.appends((level + 0) * $indent, ' ');
-                sformat(buf, k + 1 == node.count() ? cstr("</{}>") : cstr("</{}>\n"), k);
+                sformat(buf, k + 1 == node.count() ? StrView{ "</{}>" } : StrView{ "</{}>\n" }, k);
             }
             else {
                 sformat(buf, "<{} type=\"{}\">", k, val.type());
                 formatNode(buf, val, 0);
-                sformat(buf, k + 1 == node.count() ? cstr("</{}>") : cstr("</{}>\n"), k); 
+                sformat(buf, k + 1 == node.count() ? StrView{ "</{}>" } : StrView{ "</{}>\n" }, k);
             }
         }
         break;
@@ -81,12 +81,12 @@ void formatNode(String& buf, const NodeEx& node, i32 level = 0) {
                 formatNode(buf, val, level + 1);
                 buf += "\n";
                 buf.appends((level + 0)*$indent, ' ');
-                sformat(buf, k + 1 == node.count() ? cstr("</{}>") : cstr("</{}>\n"), itr.key());
+                sformat(buf, k + 1 == node.count() ? StrView("</{}>") : StrView("</{}>\n"), itr.key());
             }
             else {
                 sformat(buf, "<{} type=\"{}\">", itr.key(), val.type());
                 formatNode(buf, val, 0);
-                sformat(buf, k + 1 == node.count() ? cstr("</{}>") : cstr("</{}>\n"), itr.key());
+                sformat(buf, k + 1 == node.count() ? StrView("</{}>") : StrView("</{}>\n"), itr.key());
             }
         }
         break;

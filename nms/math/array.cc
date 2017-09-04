@@ -8,7 +8,7 @@ namespace nms::math
 
 nms_test(array_basic) {
     Array<f32, 2> a({ 4, 4 });
-    a <<= vlins(1.0f, 0.1f);
+    a <<= lins(1.0f, 0.1f);
 
     io::console::writeln("a = {:+6.3}", a);
 
@@ -17,7 +17,7 @@ nms_test(array_basic) {
     b <<= a;
     io::console::writeln("b = {:+6.3}", b);
 
-    auto c = permute(b, { 1u, 0u });
+    auto c = b.permute({ 1u, 0u });
     io::console::writeln("c = {:+6.3}", c);
 
     auto pd = mnew<f32>(c.count());
@@ -41,10 +41,10 @@ nms_test(array_math) {
     //     | ...                             ...
     //     | 10.0  10.1  10.2  10.3 ... 11.0 ...
     //     | ...                             ...
-    b <<= vlins(0.1f, 1.f);
+    b <<= lins(0.1f, 1.f);
 
     // a = sin(b).*2 + cos(b)
-    a <<= vsin(b) * 2 + vcos(b);
+    a <<= sin(b) * 2 + cos(b);
 
     // h:= host memory
     math::Array<f32, 2> h({ 32u, 32u });
@@ -59,8 +59,8 @@ nms_test(array_project3d) {
     Array<f32, 3> imag({ 10u, 64u, 64u });
     Array<f32, 2> view({ 64u, 64u });
 
-    imag <<= vlins(0.f, 0.01f, 1.f);
-    view <<= vsum(imag);
+    imag <<= lins(0.f, 0.01f, 1.f);
+    view <<= sum(imag);
 
     auto x_imag = imag.slice({ 0u }, { 0u, 8u }, { 0u, 8u });
     auto x_view = view.slice({ 0u, 8u }, { 0u, 8u });

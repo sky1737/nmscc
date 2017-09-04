@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <nms/core/base.h>
 #include <nms/core/view.h>
@@ -16,7 +16,7 @@ struct Type
         return get_name_();
     }
 
-    constexpr bool operator==(Type x) {
+    constexpr bool operator==(Type x) const {
         return get_name_ == x.get_name_;
     }
 
@@ -37,7 +37,7 @@ private:
     {}
 
 #if defined(NMS_CC_MSVC)
-    static constexpr auto funcsig_head_size_ = sizeof("struct nms::ns_view::View<char const ,0> __cdecl nms::Type::_get_name<") - 1;
+    static constexpr auto funcsig_head_size_ = sizeof("struct nms::View<char const ,0> __cdecl nms::Type::_get_name<") - 1;
     static constexpr auto funcsig_tail_size_ = sizeof(">(void)") - 1;
 #elif defined(NMS_CC_CLANG)
     static constexpr auto funcsig_head_size_ = sizeof("static View<const char> nms::Type::_get_name() [T = ") - 1;
@@ -50,8 +50,10 @@ private:
 #endif
     template<class T>
     static Tname _get_name() {
-        static const Tname full_name = __PRETTY_FUNCTION__;
-        static const Tname type_name = { __PRETTY_FUNCTION__ + funcsig_head_size_, { u32(sizeof(__PRETTY_FUNCTION__) - funcsig_head_size_ - funcsig_tail_size_ - 1) } };
+        static const char* full_name    = __PRETTY_FUNCTION__;
+        static const char* type_head    = full_name + funcsig_head_size_;
+        static const u32   type_size    = u32(sizeof(__PRETTY_FUNCTION__)) -1 - funcsig_head_size_ - funcsig_tail_size_;
+        static const Tname type_name    = { type_head, type_size };
         return type_name;
     }
 };

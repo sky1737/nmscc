@@ -8,72 +8,6 @@
 namespace nms::cuda
 {
 
-template<class T, u32 N>
-struct View;
-
-template<class T, u32 N>
-View<T,N> mkView(const nms::View<T,N>& view) {
-    return view;
-}
-
-template<class T, u32 N>
-struct View
-    : nms::View<T, N>
-{
-public:
-    using base = nms::View<T, N>;
-
-    View(const base& view)
-        : base(view)
-    {}
-
-    explicit View(T* ptr, const u32(&len)[N])
-        : base(ptr, len)
-    {}
-
-    /* slice */
-    template<class ...I, u32 ...S>
-    auto slice(const I(&...idxs)[S]) const noexcept {
-        return mkView(base::slice(idxs...));
-    }
-
-    /* slice */
-    template<class ...I, u32 ...S>
-    auto slice(const I(&...idxs)[S]) noexcept {
-        return mkView(base::slice(idxs...));
-    }
-
-    /*!
-     * slice the view
-     * @param ss sections
-     * @sa slice
-     */
-    template<class I, u32 S, class ...Is, u32 ...Ss>
-    auto operator()(const I(&s)[S], const Is(&...ss)[Ss]) noexcept {
-        return slice(s, ss...);
-    }
-
-    /*!
-     * slice the view
-     * @param ss sections
-     * @sa slice
-     */
-    template<class I, u32 S, class ...Is, u32 ...Ss>
-    auto operator()(const I(&s)[S], const I(&...ss)[Ss]) const noexcept {
-        return slice(s, ss...);
-    }
-};
-
-template<class T, u32 N>
-constexpr ForeachExecutor mkForeachExecutor(const View<T, N>&) {
-    return {};
-}
-
-template<class T, u32 N>
-nms::View<T, N> toLambda(const View<T, N>& v) {
-    return v;
-}
-
 namespace device
 {
 template<class T, u32 N>
@@ -82,9 +16,11 @@ class Array
     , public INocopyable
 {
 public:
-    using base = View<T, N>;
+    using base  = View<T, N>;
+    using Texec = cuda::Texec;
+    using Tsize = typename base::Tsize;
 
-    explicit Array(const u32(&len)[N])
+    explicit Array(const Tsize(&len)[N])
         : base(nullptr, len) {
         auto dat = mnew<T>(base::count());
         base::data_ = dat;
@@ -128,10 +64,14 @@ class Array
 {
 public:
     using base = View<T, N>;
+    using Texec = cuda::Texec;
+    using Tsize = typename base::Tsize;
 
-    explicit Array(const u32(&len)[N])
-        : base(nullptr, len) {
-        auto dat = hnew<T>(base::numel());
+    constexpr static const auto $rank = base::$rank;
+
+    explicit Array(const Tsize(&size)[$rank])
+        : base(nullptr, size) {
+        auto dat    = hnew<T>(base::count());
         base::data_ = dat;
         deleter_ = [=] { hdel(dat); };
     }
@@ -142,19 +82,22 @@ public:
     }
 
     Array(Array&& rhs) noexcept
-        : base(static_cast<base&&>(rhs)) {
-        base::_dat = nullptr;
+        : base(rhs) {
+        rhs.data_ = nullptr;
     }
 
     Array& operator=(Array&& rhs) noexcept {
-        base::operator  = (rhs);
-        deleter_        = move(rhs.deleter_);
+        if (this != &rhs) {
+            Array tmp(move(rhs));
+            nms::swap(static_cast<base&>(*this), static_cast<base&>(tmp));
+            nms::swap(deleter_, tmp.deleter_);
+        }
         return *this;
     }
 
 protected:
     Array(const Array& rhs)
-        : Array(rhs.len()) {
+        : Array(rhs.size()) {
         *this <<= rhs;
     }
 

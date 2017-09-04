@@ -6,7 +6,7 @@
 #include <nms/util/stacktrace.h>
 #include <nms/util/library.h>
 #include <nms/cuda/runtime.h>
-#include <nms/cuda/engine.h>
+#include <nms/io/log.h>
 
 namespace nms::cuda
 {
@@ -33,7 +33,8 @@ enum CudaLibTable
 };
 
 static auto& cudaLib() {
-    static Library lib("NVCUDA.DLL");
+    static io::Path path("NVCUDA.dll");
+    static Library  lib(path);
     return lib;
 }
 
@@ -41,7 +42,7 @@ static auto cudaFun(u32 id) {
     static auto& lib = cudaLib();
 
     static Library::Function funcs[] = {
-#define NMS_CUDA_FUN(name) lib[cstr(#name)]
+#define NMS_CUDA_FUN(name) lib[StrView{#name}]
         NMS_CUDA_DEF(NMS_CUDA_FUN)
 #undef  NMS_CUDA_FUN
     };
@@ -73,7 +74,7 @@ void Exception::format(String& buf) const {
     try {
         const char* errmsg = nullptr;
         NMS_CUDA_DO(cuGetErrorName)(static_cast<CUresult>(id_), &errmsg);
-        sformat(buf, "nms.cuda: error({}), {}", id_, cstr(errmsg));
+        sformat(buf, "nms.cuda: error({}), {}", id_, StrView{ errmsg, u32(strlen(errmsg)) });
     } catch(...)
     {}
 }

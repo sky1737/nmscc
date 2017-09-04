@@ -12,14 +12,6 @@ NMS_API u32 strlen(const char* s) {
     return len;
 }
 
-NMS_API StrView cstr(const char* s) {
-    if (s==nullptr) {
-        return {};
-    }
-    auto len = strlen(s);
-    return {s, {len}};
-}
-
 /* --- split --- */
 static bool contains(char c, StrView str) {
     const auto n = str.count();

@@ -53,7 +53,7 @@ struct FmtSpec
 };
 
 // [<>=][width]
-static void _formatStr(String& buf, StrView sfmt, StrView val) {
+static void _formatStr(String& buf, const StrView& sfmt, const StrView& val) {
     const auto cnt = val.count();
 
     if (sfmt.count()==0) {
@@ -86,7 +86,7 @@ static void _formatStr(String& buf, StrView sfmt, StrView val) {
 
 // [align:<>=][width:number].[prec:number]s
 template<class T>
-static void _formatInt(String& buf, StrView sfmt, T val, StrView type) {
+static void _formatInt(String& buf, const StrView& sfmt, const T& val, const StrView& type) {
     char str[256];
 
     if (sfmt.count()==0) {
@@ -148,7 +148,7 @@ static void _formatInt(String& buf, StrView sfmt, T val, StrView type) {
 
 // [align:<>=][sign:+-][width:number].[prec:number]
 template<class T>
-static void _formatFlt(String& buf, StrView sfmt, T val) {
+static void _formatFlt(String& buf, const StrView& sfmt, const T& val) {
     const auto fmt = sfmt.count() > 0 ? FmtSpec(sfmt): $is<float, T> ? FmtSpec(3, 3) : FmtSpec(6, 6);
 
     char tmp[256];
@@ -186,39 +186,40 @@ static void _formatFlt(String& buf, StrView sfmt, T val) {
     }
 }
 
-NMS_API void formatImpl(String& buf, StrView fmt, StrView val) { _formatStr(buf, fmt, val);              }
-NMS_API void formatImpl(String& buf, StrView fmt, i8      val) { _formatInt(buf, fmt, val,      "%d");   }
-NMS_API void formatImpl(String& buf, StrView fmt, u8      val) { _formatInt(buf, fmt, val,      "%u");   }
-NMS_API void formatImpl(String& buf, StrView fmt, i16     val) { _formatInt(buf, fmt, val,      "%d");   }
-NMS_API void formatImpl(String& buf, StrView fmt, u16     val) { _formatInt(buf, fmt, val,      "%u");   }
-NMS_API void formatImpl(String& buf, StrView fmt, i32     val) { _formatInt(buf, fmt, val,      "%d");   }
-NMS_API void formatImpl(String& buf, StrView fmt, u32     val) { _formatInt(buf, fmt, val,      "%u");   }
-NMS_API void formatImpl(String& buf, StrView fmt, i64     val) { _formatInt(buf, fmt, val,      "%lld"); }
-NMS_API void formatImpl(String& buf, StrView fmt, u64     val) { _formatInt(buf, fmt, val,      "%llu"); }
-NMS_API void formatImpl(String& buf, StrView fmt, void*   val) { _formatInt(buf, fmt, u64(val), "%p");   }
-NMS_API void formatImpl(String& buf, StrView fmt, f32     val) { _formatFlt(buf, fmt, val); }
-NMS_API void formatImpl(String& buf, StrView fmt, f64     val) { _formatFlt(buf, fmt, val); }
+NMS_API void formatImpl(String& buf, const StrView& fmt, StrView val) { _formatStr(buf, fmt, val);              }
+NMS_API void formatImpl(String& buf, const StrView& fmt, i8      val) { _formatInt(buf, fmt, val,      "%d");   }
+NMS_API void formatImpl(String& buf, const StrView& fmt, u8      val) { _formatInt(buf, fmt, val,      "%u");   }
+NMS_API void formatImpl(String& buf, const StrView& fmt, i16     val) { _formatInt(buf, fmt, val,      "%d");   }
+NMS_API void formatImpl(String& buf, const StrView& fmt, u16     val) { _formatInt(buf, fmt, val,      "%u");   }
+NMS_API void formatImpl(String& buf, const StrView& fmt, i32     val) { _formatInt(buf, fmt, val,      "%d");   }
+NMS_API void formatImpl(String& buf, const StrView& fmt, u32     val) { _formatInt(buf, fmt, val,      "%u");   }
+NMS_API void formatImpl(String& buf, const StrView& fmt, i64     val) { _formatInt(buf, fmt, val,      "%lld"); }
+NMS_API void formatImpl(String& buf, const StrView& fmt, u64     val) { _formatInt(buf, fmt, val,      "%llu"); }
+NMS_API void formatImpl(String& buf, const StrView& fmt, void*   val) { _formatInt(buf, fmt, u64(val), "%p");   }
+NMS_API void formatImpl(String& buf, const StrView& fmt, f32     val) { _formatFlt(buf, fmt, val); }
+NMS_API void formatImpl(String& buf, const StrView& fmt, f64     val) { _formatFlt(buf, fmt, val); }
 
-NMS_API void formatImpl(String& buf, StrView fmt, bool    val) {
+NMS_API void formatImpl(String& buf, const StrView& fmt, bool    val) {
     if (fmt.count() > 0) {
         if (fmt[0] == 'C') {
-            buf += val ? cstr("True") : cstr("False");
+            buf += val ? StrView("True") : StrView("False");
             return;
         }
         if (fmt[0] == 'U') {
-            buf += val ? cstr("TRUE") : cstr("FALSE");
+            buf += val ? StrView("TRUE") : StrView("FALSE");
             return;
         }
     }
-    buf += val ? cstr("true") : cstr("false");
+    buf += val ? StrView("true") : StrView("false");
 }
 
-NMS_API void formatImpl(String& buf, StrView fmt, const IException& val) {
+NMS_API void formatImpl(String& buf, const StrView& fmt, const IException& val) {
     (void)fmt;
     val.format(buf);
 }
 
-NMS_API bool Formatter::next(u32& id, StrView& fmt) {
+template<>
+NMS_API bool Formatter<char>::next(u32& id, StrView& fmt) {
 
     fmt = StrView();
 

@@ -153,9 +153,9 @@ using std::swap;
 #else
 template<class T>
 __forceinline void swap(T& a, T& b) noexcept {
-    T c(move(a));
-    a = move(b);
-    b = move(c);
+    T c(static_cast<T&&>(a));
+    a = static_cast<T&&>(b);
+    b = static_cast<T&&>(c);
 }
 
 template<class T, u32 N>
@@ -220,10 +220,17 @@ struct Vec<T, N>
     template<class I> __forceinline T&       operator[] (I idx)       noexcept { return data_[idx]; }
     template<class I> __forceinline const T& operator[] (I idx) const noexcept { return data_[idx]; }
 
-    /* join */
-    template<u32 M>
-    __forceinline constexpr Vec<T, M + N> operator%(const Vec<T, M>& u) const {
-        return Vec<T, M + N>{ data(), Seq<N>{}, u.data(), Seq<M>{} };
+    bool operator==(const Vec& v) const {
+        for (u32 i = 0; i < $rank; ++i) {
+            if (data_[i] != v.data_[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    bool operator!=(const Vec& v) const {
+        return !(*this == v);
     }
 
 protected:
@@ -243,24 +250,11 @@ protected:
 
 /* --- vec utils --- */
 template<class T, u32 N>
-__forceinline constexpr Vec<T, N> toVec(T(&v)[N]) {
+constexpr Vec<T, N> toVec(T(&v)[N]) {
     return v;
 }
 
-template<class T, u32 N>
-__forceinline bool operator==(const Vec<T, N>& x, const Vec<T, N>& y) {
-    for (u32 i = 0; i < N; ++i) {
-        if (x.data_[i] != y.data_[i]) {
-            return false;
-        }
-    }
-    return true;
-}
 
-template<class T, u32 N>
-__forceinline bool operator!=(const Vec<T, N>& x, const Vec<T, N>& y) {
-    return !(x == y);
-}
 
 /* --- vec alias --- */
 using i8x1  = Vec<i8,  1>; using u8x1  = Vec<u8, 1>;
@@ -301,123 +295,6 @@ __forceinline constexpr u32 count(const T(&array)[N]) {
     return N;
 }
 
-#pragma endregion
-
-#pragma region utils
-template<class T>
-__forceinline constexpr auto (min)(const T& a, const T& b) {
-    return a < b ? a : b;
-}
-
-template<class T>
-__forceinline constexpr auto (max)(const T& a, const T& b) {
-    return a < b ? a : b;
-}
-
-__forceinline constexpr auto any(bool a) {
-    return a;
-}
-
-__forceinline constexpr auto any(bool a, bool b) {
-    return a || b;
-}
-
-__forceinline constexpr auto any(bool a, bool b, bool c) {
-    return a || b || c;
-}
-
-__forceinline constexpr auto any(bool a, bool b, bool c, bool d) {
-    return a || b || c || d;
-}
-
-__forceinline constexpr auto any(bool a, bool b, bool c, bool d, bool e) {
-    return a || b || c || d || e;
-}
-
-__forceinline constexpr auto all(bool a) {
-    return a;
-}
-
-__forceinline constexpr auto all(bool a, bool b) {
-    return a && b;
-}
-
-__forceinline constexpr auto all(bool a, bool b, bool c) {
-    return a && b && c;
-}
-
-__forceinline constexpr auto all(bool a, bool b, bool c, bool d) {
-    return a && b && c && d;
-}
-
-__forceinline constexpr auto all(bool a, bool b, bool c, bool d, bool e) {
-    return a && b && c && d && e;
-}
-
-template<class T>
-__forceinline constexpr auto sum(const T& a) {
-    return a;
-}
-
-template<class T>
-__forceinline constexpr auto sum(const T& a, const T& b) {
-    return a+b;
-}
-
-template<class T>
-__forceinline constexpr auto sum(const T& a, const T& b, const T& c) {
-    return a+b+c;
-}
-
-template<class T>
-__forceinline constexpr auto sum(const T& a, const T& b, const T& c, const T& d) {
-    return a+b+c+d;
-}
-
-template<class T>
-__forceinline constexpr auto sum(const T& a, const T& b, const T& c, const T& d, const T& e) {
-    return a+b+c+d+e;
-}
-
-template<class T>
-__forceinline constexpr auto prod() {
-    return T(1);
-}
-
-template<class T>
-__forceinline constexpr auto prod(const T& a) {
-    return a;
-}
-
-template<class T>
-__forceinline constexpr auto prod(const T& a, const T& b) {
-    return a*b;
-}
-
-template<class T>
-__forceinline constexpr auto prod(const T& a, const T& b, const T& c) {
-    return a*b*c;
-}
-
-template<class T>
-__forceinline constexpr auto prod(const T& a, const T& b, const T& c, const T& d) {
-    return a*b*c*d;
-}
-
-template<class T>
-__forceinline constexpr auto prod(const T& a, const T& b, const T& c, const T& d, const T& e) {
-    return a*b*c*d*e;
-}
-
-template<class V>
-__forceinline constexpr auto iprod(U32<>, const V& v) {
-    return decltype(v[0])(1);
-}
-
-template<u32 ...I, class V>
-__forceinline constexpr auto iprod(U32<I...>, const V& v) {
-    return prod(v[I]...);
-}
 #pragma endregion
 
 #pragma region iterator
@@ -498,9 +375,19 @@ protected:
 };
 #pragma endregion
 
-#pragma region exception
+#pragma region string
 template<class Tchar, u32 Isize>
 class TString;
+
+using String = TString<char, 0>;
+
+template<u32 N = 32> using U8String  = TString<char,     N>;
+template<u32 N = 32> using U16String = TString<char16_t, N>;
+template<u32 N = 32> using U32String = TString<char32_t, N>;
+
+#pragma endregion
+
+#pragma region exception
 
 class IException
 {
@@ -511,7 +398,7 @@ protected:
 public:
     virtual ~IException() {}
 
-    virtual void format(TString<char, 32>& buf) const
+    virtual void format(String& buf) const
     {}
 };
 

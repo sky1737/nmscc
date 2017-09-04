@@ -51,7 +51,7 @@ static Library::Function nvrtcFun(u32 id) {
     static Library lib("nvrtc64_80.dll");
 
     static Library::Function funcs[] = {
-#define NMS_NVRTC_FUN(name) lib[cstr(#name)]
+#define NMS_NVRTC_FUN(name) lib[StrView{#name}]
         NMS_NVRTC_DEF(NMS_NVRTC_FUN)
 #undef  NMS_NVRTC_FUN
     };
@@ -122,12 +122,12 @@ NMS_API bool Program::compile() {
 }
 #pragma endregion
 
-NMS_API Program& ForeachExecutor::sProgram() {
+NMS_API Program& Texec::sProgram() {
     static Program program(nms_cuda_kernel_src);
     return program;
 }
 
-NMS_API Module& ForeachExecutor::sModule() {
+NMS_API Module& Texec::sModule() {
     static StrView ptx_src = [=] {
         const io::Path src_path("nms.cuda.kernel.cu");
         const io::Path ptx_path("nms.cuda.kernel.ptx");
@@ -158,7 +158,7 @@ NMS_API Module& ForeachExecutor::sModule() {
     return value;
 }
 
-NMS_API Module::fun_t ForeachExecutor::_get_kernel(u32 fid) {
+NMS_API Module::fun_t Texec::_get_kernel(u32 fid) {
     static auto& mod = sModule();
 
     char name[64];
@@ -167,7 +167,7 @@ NMS_API Module::fun_t ForeachExecutor::_get_kernel(u32 fid) {
     return func;
 }
 
-NMS_API u32 ForeachExecutor::_add_func(StrView func, StrView ret_type, StrView arg_type) {
+NMS_API u32 Texec::_add_func(StrView func, StrView ret_type, StrView arg_type) {
     static auto func_id = 0;
 
     static String src;

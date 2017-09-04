@@ -16,7 +16,7 @@ int main(int argc, const char* argv[]) {
     List<StrView> masks;
 
     for (auto i = 1; i < argc; ++i) {
-        auto str = cstr(argv[i]);
+        auto str = StrView{ argv[i], nms::strlen(argv[i]) };
         if (str[0] == '@') {
             libs += str.slice(1, -1);
         }

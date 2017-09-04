@@ -33,8 +33,7 @@ static auto _init_console() {
 #ifdef NMS_OS_WINDOWS
     auto hout = ::GetStdHandle(-11);
     ::SetConsoleMode(hout, 0xF);
-    auto ret = setlocale(LC_CTYPE, "English_United States.1252");
-    (void)ret;
+    ::system("chcp 65001"); // windows cannot set local to utf-8
 #endif
     return 0;
 }

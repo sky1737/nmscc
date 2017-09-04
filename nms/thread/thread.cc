@@ -15,7 +15,7 @@ extern "C" {
     static int thrd_create(thrd_t* thr, thrd_start_t func, void* arg) {
         u32  tid = 0;
         auto obj = _beginthreadex(nullptr, 0u, func, arg, 0, &tid);
-        *thr = reinterpret_cast<thrd_t*>(obj);
+        *thr = reinterpret_cast<thrd_t>(obj);
         return int(tid);
     }
 

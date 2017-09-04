@@ -50,13 +50,13 @@ public:
     }
 
     const char* cstr() const {
-        return str().data();
+        return str_.data();
     }
 
 private:
-    String str_;
+    U8String<64> str_;
 
-    NMS_API void init(StrView s);
+    NMS_API void init(const StrView& s);
 };
 
 NMS_API Path  cwd();

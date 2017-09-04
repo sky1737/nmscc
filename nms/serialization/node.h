@@ -24,6 +24,8 @@ struct Node
     friend void json::formatNode(String& buf, const NodeEx& node, i32 level);
     friend void  xml::formatNode(String& buf, const NodeEx& node, i32 level);
 
+    using Tsize = u16;
+    using Tnext = i32;
 public:
     Node() = default;
 
@@ -45,10 +47,10 @@ public:
     explicit Node(DateTime  val) : type_(Type::datetime),   i64_val_(val.stamp()) {}
 
     explicit Node(StrView   val, Type type=Type::string)
-        : type_(type), size_(val.count()), str_val_(val.data())
+        : type_(type), size_(Tsize(val.count())), str_val_(val.data())
     {}
 
-    explicit Node(Type type, u32 size = 0)
+    explicit Node(Type type, Tsize size = 0)
         : type_(type), size_(size), str_val_(nullptr)
     {}
 
@@ -56,15 +58,15 @@ public:
         return type_;
     }
 
-    u32 count() const {
+    Tsize count() const {
         return size_;
     }
 
-    u32 size() const {
+    Tsize size() const {
         return size_;
     }
 
-    u32 next() const {
+    Tnext next() const {
         return next_;
     }
 
@@ -83,8 +85,8 @@ protected:
     using str_t = const char*;
 
     Type    type_ = Type::null;  // 2 byte
-    u16     size_ = 0;           // 2 byte
-    u32     next_ = 0;           // 4 byte
+    Tsize   size_ = 0;           // 2 byte
+    Tnext   next_ = 0;           // 4 byte
 
     union                        // 8byte
     {
@@ -319,7 +321,7 @@ public:
     /* object: index */
     template<u32 N>
     NodeEx operator[](const char(&s)[N]) {
-        return (*this)[cstr(s)];
+        return (*this)[StrView(s)];
     }
 
     /* object: index */

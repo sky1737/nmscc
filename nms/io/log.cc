@@ -12,6 +12,11 @@ using namespace nms::thread;
 
 Level   gLevel = Level::None;
 
+NMS_API String& gStrBuf() {
+    static TString<char, 4096> buf;
+    return buf;
+}
+
 NMS_API Level getLevel() {
     return gLevel;
 }
@@ -112,7 +117,7 @@ NMS_API void message(Level level, StrView msg) {
         };
         const auto& title       = titles[u32(level)];
         char        head[64];
-        auto        head_len    = snprintf(head, sizeof(head), "%*s%7.3f\033[0m ", title.count(), title.data(), time);
+        auto        head_len    = snprintf(head, sizeof(head), "%*s%7.3f\033[0m ", int(title.count()), title.data(), time);
 
 
         StrView strs[] = {

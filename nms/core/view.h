@@ -1,16 +1,41 @@
-#pragma once
+﻿#pragma once
 
 #include <nms/core/base.h>
 #include <nms/core/trait.h>
+#include <nms/core/math.h>
 
 namespace nms
 {
 
+namespace math
+{
+struct Texec;
+
+namespace _view
+{
+template<class T, u32 N>
+struct IView
+{
+    using Tdata = T;
+    using Texec = math::Texec;
+    static const auto $rank = N;
+
+    static constexpr auto rank() {
+        return $rank;
+    }
+};
+
+}
+
+}
+
 template<class T, u32 N = 0>
 struct View;
 
+using StrView = View<const char>;
+
 template<class T, u32 N>
-struct View
+struct View: public math::_view::IView<T, N>
 {
 #pragma region defines
     constexpr static const auto $rank = N;
@@ -19,6 +44,8 @@ struct View
     using Tsize     = u32;
     using Trank     = u32;
     using Tdims     = Vec<Tsize,$rank>;
+    using Tinfo     = u8x4;
+    using Tview     = View;
 
     template<class U, u32 M>
     friend struct View;
@@ -170,7 +197,6 @@ struct View
         return _slice(idxs...)._select(Index<(Icnt > 1)...>{});
     }
 
-
     /*!
      * slice the view
      * @param ids sections
@@ -219,7 +245,7 @@ View<Tdata,M> reshape(const u32(&new_size)[M], const u32(&new_stride)[M]) const 
 #pragma endregion
 
 #pragma region save/load
-    __forceinline static u8x4 typeinfo() {
+    static Tinfo info() {
         const auto ch =
             $is<$uint, Tdata> ? 'u' :
             $is<$sint, Tdata> ? 'i' :
@@ -239,15 +265,23 @@ protected:
     Tdims   size_;
     Tdims   stride_;    // stride[0] = capicity
 
-#pragma region offset_of
+#pragma region index_of
     template<u32 Idim>
-    __forceinline constexpr Tsize offset_of(u32 idx) const noexcept {
-        return idx * stride_[Idim];
+    __forceinline constexpr Tsize index_of(u32 idx) const noexcept {
+        return idx;
     }
 
     template<u32 Idim>
-    __forceinline constexpr Tsize offset_of(i32 idx) const noexcept {
-        return (idx >= 0 ? idx : i32(size_[0]) + idx) * stride_[Idim];
+    __forceinline constexpr Tsize index_of(i32 idx) const noexcept {
+        return idx >= 0 ? idx : i32(size_[0]) + idx;
+    }
+
+#pragma endregion
+
+#pragma region offset_of
+    template<u32 Idim, class Tidx>
+    __forceinline constexpr Tsize offset_of(Tidx idx) const noexcept {
+        return index_of<Idim>(idx) * stride_[Idim];
     }
 
     template<u32 ...Idim, class ...Tidx>
@@ -263,22 +297,22 @@ protected:
 
 #pragma region size_of
     template<u32 Idim, class Tidx>
-    __forceinline constexpr Tsize size_of(const Tidx(&)[1]) const noexcept {
+    constexpr Tsize size_of(const Tidx(&)[1]) const noexcept {
         return 0u;
     }
 
     template<u32 Idim, class Tidx>
-    __forceinline constexpr Tsize size_of(const Tidx(&idx)[2]) const noexcept {
-        return offset_of<Idim>(idx[1]) - offset_of<Idim>(idx[0]) + 1;
+    constexpr Tsize size_of(const Tidx(&idx)[2]) const noexcept {
+        return index_of<Idim>(idx[1]) - index_of<Idim>(idx[0]) + 1;
     }
 
     template<u32 ...Idim, class ...Tidx, u32 ...Isize>
-    __forceinline constexpr Tdims sizes_of(U32<Idim...>, const Tidx(&...idxs)[Isize]) const noexcept {
+    constexpr Tdims sizes_of(U32<Idim...>, const Tidx(&...idxs)[Isize]) const noexcept {
         return {size_of<Idim>(idxs)...};
     }
 
     template<class ...Tidx, u32 ...Isize>
-    __forceinline constexpr Tdims sizes_of(const Tidx(&...idxs)[Isize]) const noexcept {
+    constexpr Tdims sizes_of(const Tidx(&...idxs)[Isize]) const noexcept {
         return sizes_of(Seq<$rank>{}, idxs...);
     }
 #pragma endregion
@@ -286,24 +320,34 @@ protected:
 #pragma region _slice
     /* slice */
     template<class ...Tidx, u32 ...Icnt>
-    __forceinline View<Tdata, $rank> _slice(const Tidx(&...s)[Icnt]) noexcept {
+    View<Tdata, $rank> _slice(const Tidx(&...s)[Icnt]) noexcept {
         static_assert(all((Icnt <= 2)...), "unexpect array size");
         return { data_ + offsets_of(s[0]...), sizes_of(s...), stride_};
     }
 
     /* slice */
     template<class ...Tidx, u32 ...Icnt>
-    __forceinline constexpr View<const Tdata, $rank> _slice(const Tidx(&...s)[Icnt]) const noexcept {
+    View<const Tdata, $rank> _slice(const Tidx(&...s)[Icnt]) const noexcept {
         static_assert(all((Icnt <= 2)...), "unexpect array size");
         return { data_ + offsets_of(s[0]...), sizes_of(s...), stride_};
     }
 
     /* select dim */
     template<u32 ...I>
-    __forceinline constexpr View<Tdata, u32(sizeof...(I))> _select(U32<I...>) const noexcept {
+    View<Tdata, u32(sizeof...(I))> _select(U32<I...>) const noexcept {
         return { data_, { size_[I]... }, { stride_[I]... } };
     }
 #pragma endregion
+
+private:
+    static constexpr Tdims mkStride(const Tdims& size) {
+        return mkStride(Seq<$rank>{}, size);
+    }
+
+    template<u32 ...I>
+    static constexpr Tdims mkStride(U32<I...>, const Tdims& size) {
+        return { iprod(Seq<I>{}, size)... };
+    }
 };
 
 template<class T>
@@ -315,7 +359,7 @@ struct View<T, 0>
     using Tdata = T;
     using Tsize = u32;
     using Trank = u32;
-    using Tdims = Vec<u32,$rank>;
+    using Tdims = Vec<u32, $rank>;
 
     template<class U, u32 M>
     friend struct View;
@@ -330,14 +374,12 @@ struct View<T, 0>
 
     /*! construct view with data, size, stride */
     constexpr View(Tdata* data, Tsize size)
-        : data_{ data }, size_{ size }
-    {}
+        : data_{ data }, size_{ size } {}
 
     /*! construct view with data, size, stride */
     template<u32 Isize>
-    constexpr View(Tdata (&data)[Isize])
-        : data_{ data }, size_{ ($is<T, char> || $is<T, const char>) ? Isize-1: Isize }
-    {}
+    constexpr View(Tdata(&data)[Isize])
+        : data_{ data }, size_{ ($is<T, char> || $is<T, const char>) ? Isize - 1 : Isize } {}
 
     /*! convert to const View */
     operator View<const T>() const noexcept {
@@ -363,7 +405,7 @@ struct View<T, 0>
 
     /*! get n-dim size */
     Tdims size() const noexcept {
-        return {size_};
+        return { size_ };
     }
 
     /*! get total elements count */
@@ -420,79 +462,91 @@ struct View<T, 0>
 #pragma endregion
 
 #pragma region iterator
-Tdata* begin() {
-    return data();
-}
+    Tdata* begin() {
+        return data_;
+    }
 
-Tdata* end(View<T>& v) {
-    return data() + count();
-}
+    Tdata* end() {
+        return data_ + size_;
+    }
 
-const Tdata* begin() const {
-    return data();
-}
+    const Tdata* begin() const {
+        return data_;
+    }
 
-const Tdata* end() const {
-    return data() + count();
-}
+    const Tdata* end() const {
+        return data_ + size_; 
+    }
 #pragma endregion
 
 #pragma region slice
     /*! slice */
     template<class Tidx>
     View<Tdata> slice(Tidx first, Tidx last) noexcept {
-        return { data_ + offset_of(first), offset_of(last) - offset_of(first) + 1 };
+        const auto data = data_ + offset_of(first);
+        const auto size = offset_of(last) - offset_of(first) + 1;
+        return { data, size };
     }
 
     /*! slice */
     template<class Tidx>
     View<const Tdata> slice(Tidx first, Tidx last) const noexcept {
-        return { data_ + offset_of(first), offset_of(last) - offset_of(first) + 1 };
+        const auto data = data_ + offset_of(first);
+        const auto size = offset_of(last) - offset_of(first) + 1;
+        return { data, size };
     }
 
     /*! slice */
     template<class Tidx>
     View<Tdata> operator()(Tidx first, Tidx last) noexcept {
-        return { data_ + offset_of(first), offset_of(last) - offset_of(first) + 1 };
+        return slice(first, last);
     }
 
     /*! slice */
     template<class Tidx>
     View<const Tdata> operator()(Tidx first, Tidx last) const noexcept {
-        return { data_ + offset_of(first), offset_of(last) - offset_of(first) + 1 };
+        return slice(first, last);
     }
 #pragma endregion
 
 #pragma region method
-int compare(const View<T>& b) const {
-    auto& a = *this;
+    int compare(const View<T>& b) const {
+        auto& a = *this;
 
-    if (&a == &b) {
+        if (&a == &b) {
+            return 0;
+        }
+
+        const auto na = a.count();
+        const auto nb = b.count();
+
+        if (na != nb) {
+            return na > nb ? +1 : -1;
+        }
+
+        for (Tsize i = 0; i < na; ++i) {
+            if (a[i] != b[i]) {
+                return a[i] > b[i] ? +1 : -1;
+            }
+        }
         return 0;
     }
 
-    const auto na = a.count();
-    const auto nb = b.count();
-
-    if (na != nb) {
-        return na > nb ? +1 : -1;
+    bool operator== (const View& v) const {
+        return compare(v) == 0;
     }
 
-    for (Tsize i = 0; i < na; ++i) {
-        if (a[i] != b[i]) {
-            return a[i] > b[i] ? +1 : -1;
-        }
+    bool operator!= (const View& v) const {
+        return compare(v) != 0;
     }
-    return 0;
-}
 
 #pragma endregion
 
 #pragma region save/load
     __forceinline static u8x4 typeinfo() {
         const auto ch =
-            $is<$uint,  T> ? 'u' :
-            $is<$sint,  T> ? 'i' :
+            $is<$uint, T> ? 'u' :
+            $is<$sint, T> ? 'i' :
             $is<$float, T> ? 'f' :
             '?';
         const auto size = sizeof(T);
@@ -503,24 +557,25 @@ int compare(const View<T>& b) const {
 #pragma endregion
 
 protected:
-    Tdata*  data_;
-    Tsize   size_;
+    Tdata*  data_       = nullptr;
+    Tsize   size_       = 0;
+    Tsize   capacity_   = 0;
 
 #pragma region offset_of
-    __forceinline constexpr auto offset_of(u32 idx) const noexcept {
+    __forceinline constexpr u32 offset_of(u32 idx) const noexcept {
         return idx;
     }
 
-    __forceinline constexpr auto offset_of(u64 idx) const noexcept {
+    __forceinline constexpr u64 offset_of(u64 idx) const noexcept {
         return idx;
     }
 
-    __forceinline constexpr auto offset_of(i32 idx) const noexcept {
-        return idx >= 0 ? idx : u32(size_) + u32(-idx);
+    __forceinline constexpr u32  offset_of(i32 idx) const noexcept {
+        return idx >= 0 ? idx : u32(size_) - u32(-idx);
     }
 
-    __forceinline constexpr auto offset_of(i64 idx) const noexcept {
-        return idx >= 0 ? idx : u64(size_) + u64(-idx);
+    __forceinline constexpr u64 offset_of(i64 idx) const noexcept {
+        return idx >= 0 ? idx : u64(size_) - u64(-idx);
     }
 
 #pragma endregion

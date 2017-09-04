@@ -11,21 +11,22 @@ NMS_API const CallStacks& gExceptionStacks() {
     return stacks;
 }
 
-NMS_API void gSetExceptionStacks(CallStacks&& stack) {
+NMS_API void setExceptionStacks(CallStacks&& stack) {
     auto& gstack = const_cast<CallStacks&>(gExceptionStacks());
     gstack = move(stack);
 }
 
 NMS_API void dump(const IException& e)  {
-    auto  name   = cstr(typeid(e).name());
+    auto  cname  = typeid(e).name();
+    auto  name   = StrView{ cname, u32(strlen(cname)) };
     auto  str    = nms::format("throw {}: {}\n", name, e);
     auto& stacks = gExceptionStacks();
 
     const auto stacks_cnt = stacks.count();
     for (auto i = 0u; i < stacks_cnt; ++i) {
         (i + 1 != stacks_cnt)
-            ? sformat(str, cstr("\t ├─{:2}: {}\n"), i, stacks[i])
-            : sformat(str, cstr("\t └─{:2}: {}"), i, stacks[i]);
+            ? sformat(str, StrView(u8"\t ├─{:2}: {}\n"), i, stacks[i])
+            : sformat(str, StrView(u8"\t └─{:2}: {}"), i, stacks[i]);
     }
     io::log::error(str);
 }
@@ -49,7 +50,7 @@ NMS_API void ESystem::format(String& buf) const {
     // GNU version
     ptr = strerror_r(id_, tmp, sizeof(tmp));
 #endif
-    StrView str(ptr, { strlen(ptr) });
+    StrView str{ ptr, u32(strlen(ptr)) };
     sformat(buf, "system error({}): {}", id_, str);
 }
 

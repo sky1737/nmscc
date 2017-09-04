@@ -20,7 +20,7 @@ nms_test(array) {
     //     | 10.0  10.1  10.2  10.3 ... 11.0 ...
     //     | ...                             ...
 
-    b <<= vlins(0.1f, 1.f);
+    b <<= lins(0.1f, 1.f);
 
     // a = sin(b).*2 + cos(b)
     // a <<= 2.0f * vsin(b) + vcos(b);
@@ -31,15 +31,15 @@ nms_test(array) {
     // h = a  (copy from device to host)
     h <<= a;
 
-    io::console::writeln("result = [{:|}]", h.slice({ 0u, 8u }, { 0u, 8u }));
+    io::console::writeln("result = {:|}", h.slice({ 0u, 8u }, { 0u, 8u }));
 }
 
 nms_test(project) {
     cuda::Array<f32, 3> imag({ 10, 64, 64});
     cuda::Array<f32, 2> view({ 64, 64 });
 
-    imag <<= vlins(0.f, 0.01f, 1.f);
-    view <<= vsum(imag);
+    imag <<= lins(0.f, 0.01f, 1.f);
+    view <<= sum(imag);
 
     math::Array<f32, 3> host_imag({ 10, 64, 64 });
     math::Array<f32, 2> host_view({ 64, 64 });
@@ -49,8 +49,8 @@ nms_test(project) {
     auto x_imag = host_imag.slice({ 0u }, { 0u, 8u }, { 0u, 8u });
     auto x_view = host_view.slice({ 0u, 8u }, { 0u, 8u });
 
-    io::console::writeln("imag = [{:|}]", x_imag);
-    io::console::writeln("view = [{:|}]", x_view);
+    io::console::writeln("imag = {:|}", x_imag);
+    io::console::writeln("view = {:|}", x_view);
 }
 #pragma endregion
 

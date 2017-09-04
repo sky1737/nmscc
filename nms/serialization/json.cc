@@ -334,9 +334,9 @@ struct TestObject
     , public ISerializable
 {
     NMS_PROPERTY_BEGIN;
-    typedef String      NMS_PROPERTY(a);
-    typedef i32x3       NMS_PROPERTY(b);
-    typedef DateTime    NMS_PROPERTY(c);
+    typedef U8String<32>    NMS_PROPERTY(a);
+    typedef i32x3           NMS_PROPERTY(b);
+    typedef DateTime        NMS_PROPERTY(c);
     NMS_PROPERTY_END;
 };
 

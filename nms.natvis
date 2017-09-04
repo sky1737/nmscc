@@ -1,19 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
 
-  <!--nms::StrView-->
-  <Type Name="nms::View&lt;char const, 0&gt;">
-    <DisplayString Condition="size_.data_[0] !=0">{data_, [size_.data_[0]]s}</DisplayString>
-    <DisplayString Condition="size_.data_[0] ==0">{{nullptr}} </DisplayString>
-    <Expand>
-      <ArrayItems Condition="size_.data_[0] != 0">
-        <Size>size_.data_[0]</Size>
-        <ValuePointer>data_</ValuePointer>
-      </ArrayItems>
-    </Expand>
-  </Type>
-
-  <!-- nms::array -->
+  <!-- nms::Vec -->
   <Type Name="nms::Vec&lt;*,*&gt;">
     <Expand>
       <ArrayItems>
@@ -22,7 +10,20 @@
       </ArrayItems>
     </Expand>
   </Type>
+  
 
+
+  <!-- nms::View<*, 0>-->
+  <Type Name="nms::View&lt;*,0&gt;">
+    <Expand>
+      <Item Name="[size]">size_</Item>
+      <ArrayItems>
+        <Size>size_</Size>
+        <ValuePointer>data_</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+  
   <!-- nms::View -->
   <Type Name="nms::View&lt;*,*&gt;">
     <Expand>
@@ -37,9 +38,21 @@
     </Expand>
   </Type>
 
+  <!--nms::StrView-->
+  <Type Name="nms::View&lt;char const, 0&gt;">
+    <DisplayString Condition="size_ !=0">{data_, [size_]s}</DisplayString>
+    <DisplayString Condition="size_ ==0">{{nullptr}} </DisplayString>
+    <Expand>
+      <ArrayItems Condition="size_ != 0">
+        <Size>size_</Size>
+        <ValuePointer>data_</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+
   <!-- nms::String -->
   <Type Name="nms::String">
-    <DisplayString>{data_, [size_[0]]s}</DisplayString>
+    <DisplayString>{data_, [size_]s}</DisplayString>
   </Type>
 
   <!-- nms::Linspace -->

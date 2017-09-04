@@ -2,6 +2,7 @@
 
 #include <nms/core/view.h>
 #include <nms/core/memory.h>
+#include <nms/core/exception.h>
 
 namespace nms
 {
@@ -26,20 +27,58 @@ public:
     using Tsize = typename base::Tsize;
 
 #pragma region constructor
-    constexpr List() noexcept = default;
+    constexpr List() noexcept
+        : base{nullptr, 0}
+    {}
 
     ~List() {
-        if (base::data_ == nullptr) {
+        if (data_ == nullptr) {
             return;
         }
 
         for(Tsize i = 0; i < size_; ++i) {
-            base::data_[i].~Tdata();
+            data_[i].~Tdata();
         }
 
-        if (data_ != buff()) {
-            mdel(base::data_);
+        const auto buff_ = buff();
+        if (data_ != buff_) {
+            mdel(data_);
         }
+
+        size_ = 0;
+        data_ = nullptr;
+    }
+
+    List(List&& rhs) noexcept
+        : base(rhs)
+    {
+        rhs.data_     = nullptr;
+        rhs.size_     = 0;
+    }
+
+    List(const List& rhs) noexcept
+        : List{}
+    {
+        appends(rhs.data(), rhs.count());
+    }
+
+    List& operator=(List&& rhs) noexcept {
+        base::operator=(rhs);
+        rhs.data_ = nullptr;
+        rhs.size_ = 0;
+        return *this;
+    }
+
+    List& operator=(const List& rhs) noexcept {
+        // clear
+        for (Tsize i = 0; i < size_; ++i) {
+            data_[i].~Tdata();
+        }
+        size_ = 0;
+
+        // append
+        appends(rhs.data(), rhs.count());
+        return *this;
     }
 #pragma endregion
 
@@ -49,27 +88,28 @@ public:
     using base::count;
 
     /* the number of elements that can be held in currently allocated storage */
-    Tsize capicity() const noexcept {
-        return capicity_;
+    Tsize capacity() const noexcept {
+        return capacity_;
     }
 #pragma endregion
 
 #pragma region method
     List& reserve(Tsize newcnt) {
         const auto oldcnt = base::size_;
-        const auto oldcap = capicity_;
+        const auto oldcap = capacity_;
         if (newcnt > oldcap) {
             // caculate new capicity
             newcnt = newcnt > oldcap + oldcap/16 ? newcnt : oldcap + oldcap/16;
             const auto newcap = (newcnt +31) / 32 * 32;
             const auto olddat = data_;
+            capacity_ = newcap;
 
             // realloc
             const auto newdat = mnew<Tdata>(newcap);
             data_ = newdat;
 
             // move olddat -> newdat
-            for(auto i = 0; i < oldcnt; ++i) {
+            for(Tsize i = 0; i < oldcnt; ++i) {
                 new (&newdat[i])Tdata(static_cast<Tdata&&>(olddat[i]));
             }
 
@@ -118,44 +158,99 @@ public:
         new(&data_[size_++]) Tdata(fwd<U>(u));
         return *this;
     }
+#pragma endregion
+
+#pragma region save/load
+    void save(io::File& file) const {
+        saveFile(*this, file);
+    }
+
+    static List load(io::File& file) {
+        List list;
+        loadFile(&list, file);
+        return list;
+    }
+#pragma endregion
 
 protected:
     using   base::data_;
     using   base::size_;
-    Tsize   capicity_;
+    using   base::capacity_;
 
     const Tdata* buff() const {
-        return static_cast<const void*>(&capicity+1);
+        return reinterpret_cast<const Tdata*>(&capacity_+1);
     }
 
-#pragma region save/load
-    void save(io::File& file)       const;
-    void save(const io::Path& path) const;
+    template<class File>
+    static void saveFile(const List& list, File& file) {
+        const auto info = list.info();
+        const auto dims = list.size();
+        const auto data = list.data();
+        const auto nums = list.count();
+        file.save(&info, 1);
+        file.save(&dims, 1);
+        file.save(data, nums);
+    }
 
-    static List load(io::File& file);
-    static List load(const io::Path& path);
-#pragma endregion
+    template<class File>
+    static void loadFile(List& list, const File& file) {
+        typename base::Tinfo info;
+        file.load(&info, 1);
+        if (info != base::info()) { 
+            NMS_THROW(EBadType{});
+        }
+
+        typename base::Tdims dims;
+        file.load(&dims, 1);
+
+        list.reserve(dims[0]);
+        file.load(list.data(), dims[0]);
+    }
 };
 
-template<class T, u32 S>
+template<class T, u32 N>
 class List: public List<T, 0>
 {
-    using base = List<T>;
-
 public:
-    static const auto $caicity = S;
-
+    using base = List<T, 0>;
     using Tdata = typename base::Tdata;
     using Tsize = typename base::Tsize;
-    
+
+    static const Tsize $capicity = N;
+
 #pragma region constructor
     constexpr List() noexcept
     {
         data_       = static_cast<T*>(buff_);
-        capicity_   = $capicity;
+        capacity_   = $capicity;
     }
 
-    ~List() = default;
+    ~List()
+    {}
+
+    List(List&& rhs) noexcept
+        : List{} 
+    {
+        size_ = rhs.size_;
+
+        if (rhs.data_ == rhs.buff_) {
+            data_ = buff_;
+            for (auto i = 0; i < $capicity; ++i) {
+                buff_[i] = rhs.buff_[i];
+            }
+        } else {
+            data_ = rhs.data_;
+        }
+
+        rhs.data_ = nullptr;
+    }
+
+    List(const List& rhs)
+        : List{} 
+    {
+        base::appends(rhs.data(), rhs.count());
+    }
+
 #pragma endregion
 
 #pragma region property
@@ -168,16 +263,15 @@ public:
 protected:
     using   base::data_;
     using   base::size_;
-    using   base::capicity_;
+    using   base::capacity_;
     u8      buff_[sizeof(Tdata)*$capicity];
-    
-    const Tdata* buff() const {
-        return static_cast<const void*>(&capicity+1);
-    }
 
 #pragma region save/load
-    static List load(io::File& file);
-    static List load(const io::Path& path);
+    static List load(const io::File& file) {
+        List list;
+        base::load(&list, file);
+        return list;
+    }
 #pragma endregion
 };
 

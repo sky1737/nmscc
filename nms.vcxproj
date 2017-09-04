@@ -37,11 +37,17 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <PreprocessorDefinitions>NMS_BUILD;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>nms/config.h</PrecompiledHeaderFile>
+      <ForcedIncludeFiles>nms/config.h</ForcedIncludeFiles>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
       <PreprocessorDefinitions>NMS_BUILD;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>nms/config.h</PrecompiledHeaderFile>
+      <ForcedIncludeFiles>nms/config.h</ForcedIncludeFiles>
     </ClCompile>
   </ItemDefinitionGroup>
   <!--cpp: items -->
@@ -64,16 +70,10 @@
     <ClCompile Include="nms\util\stacktrace.cc" />
     <ClCompile Include="nms\util\system.cc" />
     <ClCompile Include="nms\config.h">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
-      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">nms/config.h</PrecompiledHeaderFile>
-      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">nms/config.h</PrecompiledHeaderFile>
-      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">nms/config.h</ForcedIncludeFiles>
-      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|x64'">nms/config.h</ForcedIncludeFiles>
+      <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
-    <ClInclude Include="nms\config\apple.h" />
-    <ClInclude Include="nms\config\unix.h" />
-    <ClInclude Include="nms\config\windows.h" />
+    <ClInclude Include="nms\config\posix.h" />
+    <ClInclude Include="nms\config\stdc.h" />
     <ClInclude Include="nms\core.h" />
     <ClInclude Include="nms\core\base.h" />
     <ClInclude Include="nms\core\cpp.h" />
@@ -81,6 +81,7 @@
     <ClInclude Include="nms\core\exception.h" />
     <ClInclude Include="nms\core\format.h" />
     <ClInclude Include="nms\core\list.h" />
+    <ClInclude Include="nms\core\math.h" />
     <ClInclude Include="nms\core\memory.h" />
     <ClInclude Include="nms\core\parse.h" />
     <ClInclude Include="nms\core\string.h" />
@@ -108,8 +109,7 @@
     <ClInclude Include="nms\math\complex.h" />
     <ClInclude Include="nms\math\eye.h" />
     <ClInclude Include="nms\math\fft.h" />
-    <ClInclude Include="nms\math\foreach.h" />
-    <ClInclude Include="nms\math\lambda.h" />
+    <ClInclude Include="nms\math\view.h" />
     <ClInclude Include="nms\math\linspace.h" />
     <ClInclude Include="nms\math\norm.h" />
     <ClInclude Include="nms\serialization\base.h" />

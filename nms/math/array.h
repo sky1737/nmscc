@@ -13,24 +13,24 @@ class Array
 {
   public:
     using base  = View<T, N>;
-    using base::Tsize;
-    using base::Tdims;
+    using Tsize = typename base::Tsize;
+    using Tdims = typename base::Tdims;
 
     static const auto $rank = base::$rank;
 
-    Array(T* data, const Tsize(&len)[$rank])
-        : base{ data, len }
+    Array(T* data, const Tsize(&dims)[$rank])
+        : base{ data, dims }
         , deleter_{}
     {}
 
     template<class D>
-    Array(T* data, const u32(&len)[N], D&& deleter)
-        : base{ data, len }
+    Array(T* data, const Tsize(&dims)[N], D&& deleter)
+        : base{ data, dims }
         , deleter_(fwd<D>(deleter))
     {}
 
-    explicit Array(const u32(&len)[N])
-        : base(nullptr, len)
+    explicit Array(const Tsize(&dims)[N])
+        : base(nullptr, dims)
     {
         const auto n= base::count();
         if (n != 0) {
@@ -76,7 +76,7 @@ class Array
     Array& resize(const u32(&newlen)[base::$rank]) {
         const auto oldlen = base::size();
 
-        if (oldlen == newlen) {
+        if (oldlen == Tdims{ newlen }) {
             return *this;
         }
 
