@@ -1,4 +1,6 @@
+
 #include <nms/core/exception.h>
+#include <nms/core/string.h>
 #include <nms/core/format.h>
 #include <nms/io/log.h>
 #include <nms/util/stacktrace.h>
@@ -13,22 +15,24 @@ NMS_API const CallStacks& gExceptionStacks() {
 
 NMS_API void setExceptionStacks(CallStacks&& stack) {
     auto& gstack = const_cast<CallStacks&>(gExceptionStacks());
-    gstack = move(stack);
+    gstack = static_cast<CallStacks&&>(stack);
 }
 
 NMS_API void dump(const IException& e)  {
     auto  cname  = typeid(e).name();
     auto  name   = StrView{ cname, u32(strlen(cname)) };
-    auto  str    = nms::format("throw {}: {}\n", name, e);
     auto& stacks = gExceptionStacks();
 
+    U8String<1024> buff;
+    sformat(buff, "throw {}: {}\n", name, e);
+   
     const auto stacks_cnt = stacks.count();
     for (auto i = 0u; i < stacks_cnt; ++i) {
         (i + 1 != stacks_cnt)
-            ? sformat(str, StrView(u8"\t ├─{:2}: {}\n"), i, stacks[i])
-            : sformat(str, StrView(u8"\t └─{:2}: {}"), i, stacks[i]);
+            ? sformat(buff, StrView(u8"\t ├─{:2}: {}\n"), i, stacks[i])
+            : sformat(buff, StrView(u8"\t └─{:2}: {}"), i, stacks[i]);
     }
-    io::log::error(str);
+    io::log::error(buff);
 }
 
 NMS_API u32 ESystem::current() {

@@ -32,7 +32,7 @@
 #include <mach-o/dyld.h>
 #endif
 
-#ifdef NMS_OS_UNIX
+#if defined(NMS_OS_UNIX) && !defined(NMS_OS_APPLE)
 #include <malloc.h>
 #endif
 

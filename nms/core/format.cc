@@ -1,3 +1,4 @@
+#include <nms/core/string.h>
 #include <nms/core/format.h>
 
 namespace nms

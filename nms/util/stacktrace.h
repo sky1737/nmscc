@@ -1,7 +1,7 @@
 #pragma once
 
 #include <nms/config.h>
-#include <nms/core/string.h>
+#include <nms/core/base.h>
 
 namespace nms
 {

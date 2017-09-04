@@ -52,7 +52,7 @@ nms_test(array_math) {
     // h = a  (copy from device to host)
     h <<= a;
 
-    io::console::writeln("result = {:-6.3}", h.slice({ 0u, 8u }, { 0u, 8u }));
+    io::console::writeln("result = {:-8.3}", h.slice({ 0u, 8u }, { 0u, 8u }));
 }
 
 nms_test(array_project3d) {

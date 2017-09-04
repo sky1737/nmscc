@@ -97,12 +97,7 @@ public:
     }
 #pragma endregion 
 
-    TString& operator+=(const View<Tchar>& s) {
-        base::appends(s.data(), s.count());
-        return *this;
-    }
-
-    TString& operator+=(const View<const Tchar>& s) {
+    TString& operator+=(const Tview& s) {
         base::appends(s.data(), s.count());
         return *this;
     }

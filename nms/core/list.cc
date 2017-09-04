@@ -13,8 +13,6 @@ nms_test(list) {
         list.append(i);
     }
     io::console::writeln("list = {}", list);
-
-
 }
 
 #pragma endregion

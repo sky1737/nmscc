@@ -18,9 +18,9 @@ static bool contains(char c, StrView str) {
     for (u32 i = 0; i < n; ++i) {
         if (str[i] == c) return true;
     }
+
     return false;
 }
-
 
 NMS_API List<StrView> split(StrView str, StrView delimiters) {
     List<StrView> list;
