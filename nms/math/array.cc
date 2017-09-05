@@ -44,7 +44,7 @@ nms_test(array_math) {
     b <<= lins(0.1f, 1.f);
 
     // a = sin(b).*2 + cos(b)
-    a <<= sin(b) * 2 + cos(b);
+    a <<= vsin(b) * 2 + vcos(b);
 
     // h:= host memory
     math::Array<f32, 2> h({ 32u, 32u });
@@ -60,7 +60,7 @@ nms_test(array_project3d) {
     Array<f32, 2> view({ 64u, 64u });
 
     imag <<= lins(0.f, 0.01f, 1.f);
-    view <<= sum(imag);
+    view <<= vsum(imag);
 
     auto x_imag = imag.slice({ 0u }, { 0u, 8u }, { 0u, 8u });
     auto x_view = view.slice({ 0u, 8u }, { 0u, 8u });

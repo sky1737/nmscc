@@ -114,7 +114,7 @@ public:
 #pragma region save/load
     template<class OS>
     friend OS& operator<<(OS& os, const ArrayList& list) {
-        const auto info       = View<T,1>::typeinfo();
+        const auto info       = View<T,1>::info();
         const auto count      = list.count_;
         const auto page_count = list.getPageCount();
         const auto last_count = count - (page_count - 1) * $PageSize;

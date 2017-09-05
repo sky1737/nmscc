@@ -11,7 +11,6 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <math.h>
 #include <time.h>
 #include <ctype.h>
 #include <string.h>
@@ -25,6 +24,13 @@
 #include <corecrt_malloc.h>
 #include <corecrt_memory.h>
 #include <corecrt_share.h>
+
+#include <vcruntime_typeinfo.h>
+#endif
+
+#ifdef NMS_OS_UNIX
+#include <pthread.h>
+#include <semaphore.h>
 #endif
 
 #ifdef NMS_OS_APPLE
@@ -32,10 +38,15 @@
 #include <mach-o/dyld.h>
 #endif
 
-#if defined(NMS_OS_UNIX) && !defined(NMS_OS_APPLE)
+#ifdef NMS_OS_LINUX
 #include <malloc.h>
 #endif
 
+#endif
+
+#include <stddef.h>
+#include <stdint.h>
+#include <math.h>
 
 // c++11 threads
 #if defined(NMS_OS_WINDOWS)
@@ -43,9 +54,6 @@ using thrd_t = struct thrd_st*;
 using mtx_t  = struct mtx_st*;
 using cnd_t  = struct cnd_st*;
 #elif defined(NMS_OS_MACOS)
-#include <pthread.h>
-#include <semaphore.h>
-
 using thrd_t = struct pthread_st*;
 
 struct mtx_t {
@@ -57,7 +65,7 @@ struct cnd_t {
     long sig;
     char opaque[40];
 };
-#else
+#elif defined(NMS_OS_LINUX)
 #include <pthread.h>
 #include <semaphore.h>
 using thrd_t = pthread_t;
@@ -65,4 +73,3 @@ using mtx_t  = pthread_mutex_t;
 using cnd_t  = pthread_cond_t;
 #endif
 
-#endif

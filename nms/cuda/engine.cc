@@ -69,9 +69,14 @@ static Library::Function nvrtcFun(u32 id) {
 void driver_init();
 
 NMS_API Program::Program(StrView src)
-    : src_{ src }
-    , ptx_{}
-{}
+    : src_{}
+    , ptx_{} 
+{
+    const auto init_size = 1024u * 1024u;
+    const auto buff_size = max(init_size, src.count());
+    src_.reserve(buff_size);
+    src_ += src;
+}
 
 
 NMS_API Program::~Program() 
@@ -163,15 +168,14 @@ NMS_API Module::fun_t Texec::_get_kernel(u32 fid) {
 
     char name[64];
     auto count = snprintf(name, sizeof(name), "nms_cuda_foreach_%u", fid);
-    auto func  = mod.get_kernel(StrView(name, { u32(count) }));
+    auto func  = mod.get_kernel(StrView(name, u32(count)));
     return func;
 }
 
 NMS_API u32 Texec::_add_func(StrView func, StrView ret_type, StrView arg_type) {
     static auto func_id = 0;
 
-    static String src;
-    src.resize(0);
+    U8String<1024> src;
 
     sformat(src, "__kernel__ void nms_cuda_foreach_{}(\n", func_id);
     sformat(src, "    {} ret,\n", ret_type);

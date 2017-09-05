@@ -1,5 +1,6 @@
 #include <nms/core.h>
 #include <nms/core/string.h>
+#include <nms/test.h>
 
 namespace nms
 {
@@ -43,5 +44,11 @@ NMS_API List<StrView> split(StrView str, StrView delimiters) {
 
     return list;
 }
+
+#pragma region unittest
+nms_test(string) {
+    
+}
+#pragma endregion
 
 }

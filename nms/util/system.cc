@@ -5,37 +5,16 @@
 namespace nms::system
 {
 
-NMS_API String getenv(StrView name) {
+NMS_API StrView getenv(StrView name) {
     // check if name is empty
     if (name.count()==0) {
         return {};
     }
-
     auto cname = name.data();
 
-    // check if name is cstring(null terminal)
-    if (name[name.count()] != '\0') {
-        char buff[512];
-        if (name.count() >= u32(sizeof(buff)-1) ) {
-            return "";
-        }
-        mcpy(buff, name.data(), name.count());
-        buff[name.count()] = '\0';
-        cname = buff;
-    }
-
-#ifdef NMS_OS_WINDOWS
-    char buf[64] = { 0 };
-    size_t size = 0;
-    ::getenv_s(&size, buf, cname);
-    if (size > 0) {
-        size = size - 1;
-    }
-#else
-    auto buf    = ::getenv(cname);
-    auto size   = ::strlen(buf);
-#endif
-    return { buf, static_cast<u32>(size) };
+    auto buff   = ::getenv(cname);
+    auto size   = strlen(buff);
+    return { buff, size };
 }
 
 NMS_API void sleep(double duration) {

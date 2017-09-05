@@ -54,7 +54,7 @@ public:
     }
 
 private:
-    U8String<64> str_;
+    U8String<256> str_;
 
     NMS_API void init(const StrView& s);
 };

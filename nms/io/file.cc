@@ -52,7 +52,7 @@ NMS_API u64 File::size() const {
     return fsize(fid);
 }
 
-NMS_API u64 File::readRaw(void* dat, u64 size, u64 n) {
+NMS_API u64 File::readRaw(void* dat, u64 size, u64 n) const {
     if (obj_ == nullptr || size == 0 || n == 0) {
         return 0;
     }
@@ -81,7 +81,7 @@ NMS_API TxtFile::TxtFile(const Path& path, File::OpenMode mode)
 
 #ifdef NMS_OS_WINDOWS
     auto fid = id();
-    _setmode(fid, _O_TEXT);
+    (void)_setmode(fid, _O_TEXT);
 #endif
     if (mode == File::OpenMode::Read) {
         Vec<char, 3> buf;
@@ -98,7 +98,7 @@ NMS_API TxtFile::TxtFile(const Path& path, File::OpenMode mode)
 NMS_API TxtFile::~TxtFile()
 {}
 
-NMS_API u64 TxtFile::_read(char* u8_buf, u64 size) {
+NMS_API u64 TxtFile::_read(char* u8_buf, u64 size) const {
     auto ret = base::read(u8_buf, size);
     return ret;
 }

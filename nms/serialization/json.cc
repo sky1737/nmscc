@@ -8,7 +8,7 @@ namespace nms::serialization::json
 
 // format
 void formatNode(String& buf, const NodeEx& node, i32 level=0) {
-    StrView fmt(nullptr, { 0 });
+    StrView fmt;
 
     auto& v = node.val();
 
@@ -130,8 +130,8 @@ static i32 parseNum(StrView& text, NodeEx* ptree, i32 proot, i32 pleft) {
         ++p;
     }
 
-    auto ret = ptree->add(proot, pleft, Node(StrView{ s, { u32(p-s) } }, Type::number));
-    text     = StrView{p, {u32(text.count() - 1)}};
+    auto ret = ptree->add(proot, pleft, Node(StrView{ s, u32(p-s) }, Type::number));
+    text     = StrView{p, u32(text.count() - 1)};
     return ret;
 }
 
@@ -158,7 +158,7 @@ static i32 parseStr(StrView& text, NodeEx* ptree, i32 proot, i32 pleft) {
 
     const auto b = 0;
     const auto e = u32(pos-ptr);
-    const auto ret = ptree->add(proot, pleft, Node(StrView{ text.data() + b + 1, { e - b - 1 } }, Type::string));
+    const auto ret = ptree->add(proot, pleft, Node(StrView{ text.data() + b + 1, e - b - 1 }, Type::string));
     text = text.slice(e+1, u32(text.count()) - 1);
     return ret;
 }
@@ -171,7 +171,7 @@ static i32 parseKey(StrView& text, NodeEx* ptree, i32 proot, i32 pleft) {
     u32 b = 0;
     u32 e = 1;
     while (text[e] != '"' && text[e - 1] != '\\') ++e;
-    auto ret = ptree->add(proot, pleft, Node(StrView{ text.data() + b + 1,  {e - b - 1} }, Type::key));
+    auto ret = ptree->add(proot, pleft, Node(StrView{ text.data() + b + 1,  e - b - 1 }, Type::key));
     text = text.slice( e + 1, u32(text.count()) - 1);
     return ret;
 }
@@ -318,6 +318,7 @@ static i32 parseAny(StrView& text, NodeEx* ptree, i32 proot, i32 pleft) {
 // wraper
 NMS_API Tree parse(StrView text) {
     Tree tree;
+    tree.reserve(text.count() / 10);
     parseAny(text, &tree, -1, -1);
     return tree;
 }

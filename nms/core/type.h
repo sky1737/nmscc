@@ -123,14 +123,14 @@ __forceinline StrView mkEnumName(const char(&s)[N]) {
 enum class type { __VA_ARGS__};                                                             \
 inline auto enum_names(type) {                                                              \
     static StrView names[] = { NMSCPP_FOR(_NMS_ENUM_NAME, __VA_ARGS__)};                    \
-    return View<const StrView>{names, { u32(sizeof(names) / sizeof(names[0])) }};           \
+    return View<const StrView>{names, u32(sizeof(names)/sizeof(names[0]))};                 \
 }
 
 #define NMS_ENUM_EX(enum_decl, type, ...)                                                   \
 enum_decl { __VA_ARGS__};                                                                   \
 inline auto enum_names(type) {                                                              \
     static StrView names[] = { NMSCPP_FOR(_NMS_ENUM_NAME, __VA_ARGS__)};                    \
-    return View<const StrView>{names, { u32(sizeof(names) / sizeof(names[0])) }};           \
+    return View<const StrView>{names, u32(sizeof(names) / sizeof(names[0])) };              \
 }
 
 #pragma endregion

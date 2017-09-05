@@ -8,7 +8,7 @@ namespace nms::system
 /**
  * the the system environment
  */
-NMS_API String  getenv(StrView name);
+NMS_API StrView  getenv(StrView name);
 
 /**
  * pause the program until press any key

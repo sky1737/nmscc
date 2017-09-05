@@ -281,13 +281,6 @@ using i32x4 = Vec<i32, 4>; using u32x4 = Vec<u32, 4>;
 using i64x4 = Vec<i64, 4>; using u64x4 = Vec<u64, 4>;
 using f32x4 = Vec<f32, 4>; using f64x4 = Vec<f64, 4>;
 
-/* get elements number of this array */
-template<class T, u32 N>
-__forceinline constexpr u32 numel(const T(&array)[N]) {
-    (void)array;
-    return N;
-}
-
 /* get elements count of this array */
 template<class T, u32 N>
 __forceinline constexpr u32 count(const T(&array)[N]) {

@@ -35,7 +35,7 @@ public:
     {};
 
     NMS_API File(const Path& path, OpenMode mode);
-    NMS_API ~File();
+    NMS_API virtual ~File();
     
 
     File(File&& rhs) noexcept
@@ -58,7 +58,7 @@ public:
     NMS_API void sync() const;
 
 
-    u64 read(void* data, u64 size) {
+    u64 read(void* data, u64 size) const {
         return readRaw(data, 1, size);
     }
 
@@ -71,7 +71,7 @@ public:
 #pragma region array/vec
     /* read data */
     template<class T>
-    u64 read(T data[], u64 count) {
+    u64 read(T data[], u64 count) const {
         auto nread = readRaw(static_cast<void*>(data), sizeof(T), count);
         return nread;
     }
@@ -82,23 +82,12 @@ public:
         auto nwrite = writeRaw(data, sizeof(T), count);
         return nwrite;
     }
-
-    template<class T, u32 N>
-    u64 read(T(&data)[N]) {
-        return read(data, N);
-    }
-
-    template<class T, u32 N>
-    u64 write(const T(&data)[N]) {
-        return write(data, N);
-    }
-
 #pragma endregion
 
 #pragma region view<T,N>
     /* read view data */
     template<class T, u32 N>
-    void read(View<T, N>& view) {
+    void read(View<T, N>& view) const {
         if (!view.isNormal()) {
             NMS_THROW(EBadType{});
         }
@@ -115,33 +104,6 @@ public:
         write(view.data(), view.count());
     }
 
-#pragma region save/load
-    template<class T, class = $when_is<$pod, T>>
-    File& operator>>(T& val) {
-        read(&val, 1);
-        return *this;
-    }
-
-    template<class T, class = $when_is<$pod, T>>
-    File& operator<<(const T& val) {
-        write(&val, 1);
-        return *this;
-    }
-
-    template<class T, u32 N>
-    File& operator>>(Vec<T, N>& v) {
-        read(v.data(), N);
-        return *this;
-    }
-
-    template<class T, u32 N>
-    File& operator<<(const Vec<T, N>& v) {
-        write(v.data(), N);
-        return *this;
-    }
-
-#pragma endregion
-
 protected:
 #ifndef NMS_BUILD
     struct fid_t;
@@ -151,9 +113,12 @@ protected:
 
     fid_t*  obj_;   // the FILE* object
 
-    NMS_API u64 readRaw (void*       buffer, u64 size, u64 count);
+    NMS_API u64 readRaw (void*       buffer, u64 size, u64 count) const;
     NMS_API u64 writeRaw(const void* buffer, u64 size, u64 count);
 };
+
+using DatFile = File;
+using BinFile = File;
 
 class TxtFile
     : protected File
@@ -163,13 +128,13 @@ protected:
 
 public:
     NMS_API TxtFile(const Path& path, File::OpenMode mode);
-    NMS_API ~TxtFile();
+    NMS_API virtual ~TxtFile();
 
     using base::OpenMode;
     using base::size;
     using base::sync;
 
-    u64 read(char* u8_buf, u64 size) {
+    u64 read(char* u8_buf, u64 size) const {
         return _read(u8_buf, size);
     }
 
@@ -184,7 +149,7 @@ public:
     }
 
 private:
-    NMS_API u64 _read(char* u8_buf, u64 size);
+    NMS_API u64 _read(char* u8_buf, u64 size) const;
     NMS_API u64 _write(const char* u8_buf, u64 size);
 };
 

@@ -51,7 +51,7 @@
   </Type>
 
   <!-- nms::String -->
-  <Type Name="nms::String">
+  <Type Name="nms::TString&lt;char,*&gt;">
     <DisplayString>{data_, [size_]s}</DisplayString>
   </Type>
 

@@ -12,7 +12,7 @@ constexpr auto (min)(const T& a, const T& b) {
 
 template<class T, class=$when_is<$number, T>>
 constexpr auto (max)(const T& a, const T& b) {
-    return a < b ? a : b;
+    return a > b ? a : b;
 }
 
 constexpr auto any(bool a) {

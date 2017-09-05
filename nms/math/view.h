@@ -5,60 +5,41 @@
 namespace nms::math
 {
 
-using _view::IView;
-
-// view_cast: -> Tmath
-template<class X>
-auto view_cast(const X& x, Version<1> = {} ) -> typename X::Tview {
-    return x;
+#pragma region view
+template<class T>
+auto _view_cast(const T& t, Version<0> ) -> Scalar<T> {
+    return t;
 }
-
-#pragma region scalar
 
 template<class T>
-struct Scalar : public IView<T, 0>
-{
-    using Tview = Scalar;
+auto _view_cast(const T& t, Version<1> ) -> typename T::Tview {
+    return t;
+}
 
-    Scalar(const T& t)
-        : t_(t) {}
-
-    template<class I>
-    u32 size(I idx) const noexcept {
-        return 1u;
-    }
-
-    template<class ...I>
-    const T& operator()(I ...idx) const noexcept {
-        return t_;
-    }
-
-protected:
-    T   t_;
-};
-
-/* mk scalar */
 template<class T>
-Scalar<T> mkScalar(const T& t) {
-    return { t };
+auto view_cast(const T&t) {
+    return _view_cast(t, Version<1>{});
 }
 
-/* to scalar */
-template<class T, u32 N>
-auto toScalar(const Vec<T, N>& t) {
-    return Scalar< Vec<T, N> >{t};
+
+template<class X, class Y, class= typename X::Tview, class = typename Y::Tview>
+auto _view_test_xy(Version<2>)  {
+    return 0;
 }
 
-/* to scalar */
-template<class T, class = $when< $is<$number, T> || $is<bool, T> > >
-auto toScalar(const T& t) {
-    return Scalar<T>{t};
+template<class X, class Y, class = typename X::Tview, class = $when<($is<$number, Y> || $is<bool, Y>)> >
+auto _view_test_xy(Version<1>)  {
+    return 0;
 }
 
-/* view_cast: -> Scalar */
-template<class X>
-auto view_cast(const X& x, Version<0> = {}) -> decltype(toScalar(x)) {
-    return toScalar(x);
+template<class X, class Y, class = $when_is<$number, X>, class = typename Y::Tview>
+auto _view_test_xy(Version<0>)  {
+    return 0;
+}
+
+template<class X, class Y>
+auto view_test_xy() -> decltype(_view_test_xy<X, Y>(Version<2>{})) {
+    return 0;
 }
 #pragma endregion
 
@@ -68,9 +49,10 @@ struct Parallel;
 
 template<class F, class T>
 struct Parallel<F, T>
-    : IView<decltype(F::run(declval<typename T::Tdata>())), T::$rank>
 {
     using Tview = Parallel;
+
+    constexpr static const auto $rank = T::$rank;
 
     Parallel(const T& t)
         : t_(t) {}
@@ -91,9 +73,10 @@ protected:
 
 template<class F, class X, class Y>
 struct Parallel<F, X, Y>
-    : IView<decltype(F::run(declval<typename X::Tdata>(), declval<typename Y::Tdata>())), (X::$rank > Y::$rank ? X::$rank : Y::$rank) >
 {
     using Tview = Parallel;
+
+    constexpr static const auto $rank = X::$rank | Y::$rank;
 
     Parallel(const X& x, const Y& y)
         : x_(x), y_(y) {}
@@ -138,9 +121,9 @@ struct Reduce;
 
 template<class F, class X>
 struct Reduce<F, X>
-    : IView<decltype(F::run(declval<typename X::Tdata>(), declval<typename X::Tdata>())), X::$rank - 1>
 {
     using Tview = Reduce;
+    constexpr static const auto $rank = X::$rank - 1;
 
     Reduce(const X& x) noexcept
         : x_(x)
@@ -282,7 +265,7 @@ bool check_size(const T& t, const U& u, const R& ...r) {
 
 template<class Tfunc, class Tret, class ...Targs>
 bool foreach(Tfunc func, Tret& ret, const Targs& ...args) {
-    if (!check_size(ret, args...)) {
+    if (!check_size(view_cast(ret), view_cast(args)...)) {
         return false;
     }
 
@@ -296,129 +279,91 @@ bool foreach(Tfunc func, Tret& ret, const Targs& ...args) {
 
 #pragma endregion
 
-namespace _view
-{
-
-#pragma region view_cast
-
-/* view_cast */
-template<class X>
-auto view_cast(const X& x) -> decltype(_view_cast(x, Version<1>{})) {
-    return _view_cast(x, Version<1>{});
-}
-
-#pragma endregion
-
-#pragma region view_test
-template<class X, class Y>
-auto _view_test(const X& x, const Y&y, Version<2>) ->decltype(X::Tview(x), Y::Tview(y), 0) {
-    return 0;
-}
-
-template<class X, class Y>
-auto _view_test(const X& x, const Y&y, Version<1>) ->decltype(X::Tview(x), toScalar(y), 0) {
-    return 0;
-}
-
-template<class X, class Y>
-auto _view_test(const X& x, const Y&y, Version<0>) ->decltype(toScalar(x), Y::Tview(y), 0) {
-    return 0;
-}
-
-template<class X, class Y>
-auto view_test(const X& x, const Y& y) -> decltype(_view_test(x, y, Version<2>{}), 0) {
-    return 0;
-}
-
-#pragma endregion
-
 #pragma region functions
 
-#define NMS_IVIEW_PARALLEL(op, type) template<class T> constexpr auto operator op(const T& t) noexcept { return math::mkParallel<type>(t); }
-NMS_IVIEW_PARALLEL(+, Pos)
-NMS_IVIEW_PARALLEL(-, Neg)
-#undef NMS_IVIEW_PARALLEL
+#define NMS_IVIEW_FOREACH(op, type)                     \
+    template<class T, class = typename T::Tview>        \
+    constexpr auto operator op(const T& t) noexcept {   \
+            return math::mkParallel<type>(t);           \
+    }
+NMS_IVIEW_FOREACH(+, Pos)
+NMS_IVIEW_FOREACH(-, Neg)
+#undef NMS_IVIEW_FOREACH
 
-#define NMS_IVIEW_PARALLEL(op, type) template<class X, class Y> constexpr auto operator op(const X& x, const Y& y) noexcept { return math::mkParallel<type>(x, y); }
-NMS_IVIEW_PARALLEL(+ , Add)
-NMS_IVIEW_PARALLEL(- , Sub)
-NMS_IVIEW_PARALLEL(* , Mul)
-NMS_IVIEW_PARALLEL(/ , Div)
-NMS_IVIEW_PARALLEL(^ , Pow)
+#define NMS_IVIEW_FOREACH(op, type)                                     \
+    template<class X, class Y, class = decltype(view_test_xy<X, Y>())>  \
+    constexpr auto operator op(const X& x, const Y& y) noexcept {       \
+        return math::mkParallel<type>(x, y);                            \
+    }
 
-NMS_IVIEW_PARALLEL(== ,  Eq)
-NMS_IVIEW_PARALLEL(!= , Neq)
-NMS_IVIEW_PARALLEL(<,   Lt)
-NMS_IVIEW_PARALLEL(>,   Gt)
-NMS_IVIEW_PARALLEL(<=,  Le)
-NMS_IVIEW_PARALLEL(>=,  Ge)
-#undef NMS_IVIEW_PARALLEL
+NMS_IVIEW_FOREACH(+ , Add)
+NMS_IVIEW_FOREACH(- , Sub)
+NMS_IVIEW_FOREACH(* , Mul)
+NMS_IVIEW_FOREACH(/ , Div)
+NMS_IVIEW_FOREACH(^ , Pow)
 
+NMS_IVIEW_FOREACH(== ,  Eq)
+NMS_IVIEW_FOREACH(!= , Neq)
+NMS_IVIEW_FOREACH(<,   Lt)
+NMS_IVIEW_FOREACH(>,   Gt)
+NMS_IVIEW_FOREACH(<=,  Le)
+NMS_IVIEW_FOREACH(>=,  Ge)
+#undef NMS_IVIEW_FOREACH
 
-#define NMS_IVIEW_PARALLEL(func, type) template<class T> constexpr auto func(const T& t) noexcept { return math::mkParallel<type>(t); }
-NMS_IVIEW_PARALLEL(abs,    Abs)
-NMS_IVIEW_PARALLEL(sqrt,   Sqrt)
-NMS_IVIEW_PARALLEL(pow2,   Pow2)
-NMS_IVIEW_PARALLEL(exp,    exp)
-NMS_IVIEW_PARALLEL(ln,     Ln)
-NMS_IVIEW_PARALLEL(log10, Log10)
-
-NMS_IVIEW_PARALLEL(sin,    Tan)
-NMS_IVIEW_PARALLEL(cos,    Cos)
-NMS_IVIEW_PARALLEL(tan,    Tan)
-
-NMS_IVIEW_PARALLEL(asin,   Atan)
-NMS_IVIEW_PARALLEL(acos,   Acos)
-NMS_IVIEW_PARALLEL(atan,   Atan)
-#undef NMS_IVIEW_PARALLEL
-
-
-#define NMS_IVIEW_REDUCE(func, type) template<class T> constexpr auto func(const T& t) noexcept { return math::mkReduce<type>(t); }
-NMS_IVIEW_REDUCE(sum, Add)
-NMS_IVIEW_REDUCE(max, Max)
-NMS_IVIEW_REDUCE(min, Min)
-#undef  NMS_IVIEW_REDUCE
-
-#pragma endregion
-
-#pragma region foreach-operator
-template<class X, class Y>
+template<class X, class Y, class=typename Y::Tview>
 Y& operator<<=(Y& y, const X& x) {
     foreach(Ass2{}, y, x);
     return y;
 }
 
-template<class X, class Y>
+template<class X, class Y, class=typename Y::Tview>
 Y& operator>>=(const X& x, Y& y) {
     foreach(Ass2{}, y, x);
     return y;
 }
 
-template<class X, class Y>
-Y& operator+=(Y& y, const X& x) {
-    foreach(Add2{}, y, x);
-    return y;
+#define NMS_IVIEW_FOREACH(op, type)                     \
+template<class X, class Y, class=typename Y::Tview >    \
+Y& operator op(Y& y, const X& x) {                      \
+    foreach(type{}, y, x);                              \
+    return y;                                           \
 }
 
-template<class X, class Y>
-Y& operator-=(Y& y, const X& x) {
-    foreach(Sub2{}, y, x);
-    return y;
-}
+NMS_IVIEW_FOREACH(+=, Add2)
+NMS_IVIEW_FOREACH(-=, Sub2)
+NMS_IVIEW_FOREACH(*=, Mul2)
+NMS_IVIEW_FOREACH(/=, Div2)
+#undef NMS_IVIEW_FOREACH
 
-template<class X, class Y>
-Y& operator*=(Y& y, const X& x) {
-    foreach(Mul2{}, y, x);
-    return y;
+#define NMS_IVIEW_FOREACH(func, type)       \
+template<class T>                           \
+constexpr auto func(const T& t) noexcept {  \
+    return math::mkParallel<type>(t);       \
 }
+NMS_IVIEW_FOREACH(vabs,    Abs)
+NMS_IVIEW_FOREACH(vsqrt,   Sqrt)
+NMS_IVIEW_FOREACH(vpow2,   Pow2)
+NMS_IVIEW_FOREACH(vexp,    Exp)
+NMS_IVIEW_FOREACH(vln,     Ln)
+NMS_IVIEW_FOREACH(vlog10,  Log10)
 
-template<class X, class Y>
-Y& operator/=(Y& y, const X& x) {
-    foreach(Div2{}, y, x);
-    return y;
-}
-#pragma endregion
+NMS_IVIEW_FOREACH(vsin,    Sin)
+NMS_IVIEW_FOREACH(vcos,    Cos)
+NMS_IVIEW_FOREACH(vtan,    Tan)
 
+NMS_IVIEW_FOREACH(vasin,   Atan)
+NMS_IVIEW_FOREACH(vacos,   Acos)
+NMS_IVIEW_FOREACH(vatan,   Atan)
+#undef NMS_IVIEW_FOREACH
+
+#define NMS_IVIEW_REDUCE(func, type)        \
+template<class T>                           \
+constexpr auto func(const T& t) noexcept {  \
+    return math::mkReduce<type>(t);         \
 }
+NMS_IVIEW_REDUCE(vsum,      Add)
+NMS_IVIEW_REDUCE(vmax,      Max)
+NMS_IVIEW_REDUCE(vmin,      Min)
+#undef  NMS_IVIEW_REDUCE
 
 }

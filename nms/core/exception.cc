@@ -1,4 +1,5 @@
 
+#include <typeinfo>
 #include <nms/core/exception.h>
 #include <nms/core/string.h>
 #include <nms/core/format.h>

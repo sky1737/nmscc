@@ -26,8 +26,8 @@ static StrView _get_usr_dir() {
 
     static char usr_path_buf[1024];
 #ifdef NMS_OS_WINDOWS
-    ::strncat(exe_path_buf, "/../../", 8);
-    ::_fullpath(usr_path_buf, exe_path_buf, sizeof(usr_path_buf));
+    (void)::strncat(exe_path_buf, "/../../", 8);
+    (void)::_fullpath(usr_path_buf, exe_path_buf, sizeof(usr_path_buf));
     const auto  path_len = ::strlen(usr_path_buf);
     for (auto i = 0; i < path_len; ++i) {
         if (usr_path_buf[i] == '\\') {
@@ -36,8 +36,9 @@ static StrView _get_usr_dir() {
     }
 #else
     const auto  path_len = snprintf(usr_path_buf, sizeof(usr_path_buf), "%s/../../", exe_path_buf);
+    (void)path_len;
 #endif
-    return StrView{ usr_path_buf, {u32(path_len)} };
+    return mkStrView(usr_path_buf);
 }
 
 NMS_API void Path::init(const StrView& str) {
@@ -109,7 +110,7 @@ NMS_API Path cwd() {
     }
 
     const auto len = u32(::strlen(ptr));
-    return Path(StrView{ ptr, {u32(len)} });
+    return Path(StrView{ ptr, u32(len) });
 }
 
 NMS_API void chdir(const Path& path) {

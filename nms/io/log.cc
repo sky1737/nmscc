@@ -81,7 +81,9 @@ public:
         LockGuard lock_guard(mutex_);
         char buff[1024];
         auto buff_len = snprintf(buff, sizeof(buff), "%8.3f (%s) ", time, to_str(level).data());
-        txtfile_->write(StrView(buff, { u32(buff_len) }));
+        (void)buff_len;
+
+        txtfile_->write(mkStrView(buff));
         txtfile_->write(message);
         txtfile_->sync();
     }
@@ -121,11 +123,11 @@ NMS_API void message(Level level, StrView msg) {
 
 
         StrView strs[] = {
-            StrView(head, {u32(head_len)}),
+            StrView(head, u32(head_len)),
             StrView(msg),
             StrView("\n")
         };
-        console::writes(strs, numel(strs));
+        console::writes(strs, count(strs));
 
         if (level >= Level::Fatal) {
             CallStacks stacks;

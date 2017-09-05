@@ -4,12 +4,19 @@
 
 /* check Operating System */
 #if defined(_WIN32)
-#   define NMS_OS_WINDOWS           // check if os == windows
-#elif defined(__APPLE__)
-#   define NMS_OS_APPLE             // check if os == macos
-#   define NMS_OS_UNIX              // check if os == macos
-#elif defined(__unix__)
-#   define NMS_OS_UNIX              // check if os == linux
+#   define NMS_OS_WINDOWS                   // check if os == windows
+#endif
+
+#if defined(__APPLE__)
+#   define NMS_OS_APPLE                     // check if os == macos
+#endif
+
+#if defined(__unix__)
+#   define NMS_OS_UNIX                      // check if os == linux
+#endif
+
+#if defined(__linux) || defined(__linux)
+#   define NMS_OS_LINUX                     // check if os == unix
 #endif
 
 /* check compilier */
@@ -44,13 +51,7 @@
 #endif
 #pragma endregion
 
-#ifdef NMS_BUILD
 #include <nms/config/stdc.h>
 #include <nms/config/posix.h>
-#include <typeinfo>
-#endif
 
-#include <stddef.h>
-#include <stdint.h>
-#include <math.h>
 #endif  // _NMS_CONFIG_H_

@@ -78,7 +78,7 @@ public:
         if ((type_ != Type::string) && (type_ != Type::key) && (type_ != Type::number) ) {
             NMS_THROW(EUnexpectType(Type::string, type_));
         }
-        return { str_val_, {size_} };
+        return { str_val_, size_ };
     }
 
 protected:
@@ -163,7 +163,7 @@ public:
             if (x.type_ != Type::key) {
                 NMS_THROW(EUnexpectType{ Type::key, x.type_ });
             }
-            return { x.key_val_, {x.size_} };
+            return { x.key_val_, x.size_ };
         }
 
         NodeEx operator*() const {
@@ -228,7 +228,7 @@ public:
         if (k.type_ != Type::key) {
             NMS_THROW(EUnexpectType{ Type::key, k.type_ });
         }
-        StrView val = { k.str_val_, {k.size_} };
+        StrView val = { k.str_val_, k.size_ };
         return val;
     }
 
@@ -327,7 +327,7 @@ public:
     /* object: index */
     template<u32 N>
     NodeEx operator[](const char(&s)[N]) const {
-        return (*this)[cstr(s)];
+        return (*this)[StrView(s)];
     }
 #pragma endregion
 
@@ -561,6 +561,9 @@ public:
         return *this;
     }
 
+    void reserve(u32 cnt) {
+        nodes_.reserve(cnt);
+    }
 protected:
     List<Node>  nodes_;
 };

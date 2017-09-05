@@ -38,8 +38,8 @@ private:
     template<class T, i32 I>
      static auto _do_format(I32<I> idx, String* buf, const T& obj, u32& name_len) ->$when<(I < T::_$property_cnt)> {
         auto t = (obj)[idx];
-        auto name  = t.name;
-        auto value = t.value;
+        auto& name  = t.name;
+        auto& value = t.value;
         if (buf != nullptr) {
             buf->appends(4, ' ');
             *buf += name;
@@ -284,7 +284,7 @@ void sformat(String& buf, const StrView& fmt, const T& ...t) {
 /* format to string */
 template<class ...T>
 auto format(const StrView& fmt, const T& ...t) {
-    U8String<64> buf = {};
+    U8String<1024> buf = {};
     Formatter<char> fmtter(buf, fmt);
     fmtter(t...);
     return buf;

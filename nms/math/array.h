@@ -1,7 +1,6 @@
 #pragma once
 
 #include <nms/core/view.h>
-#include <nms/io/file.h>
 
 namespace nms::math
 {
@@ -93,43 +92,20 @@ class Array
     }
 
 #pragma region save/load
-    void save(io::File& os) const {
-        const auto info = base::typeinfo();
-        const auto size = base::size();
+    void save(io::File& file) const {
+        return saveFile(file);
+    }
 
-        os << info;
-        os << size;
-        os.write(base::data(), base::count());
+    static Array load(const io::File& file) {
+        return loadFile(file);
     }
 
     void save(const io::Path& path) const {
-        io::File file(path, io::File::Write);
-        save(file);
-    }
-
-    static Array load(io::File& is) {
-        u8x4        info;
-        Vec<u32, N> size;
-
-        is >> info;
-        is >> size;
-        if (info != base::typeinfo()) {
-            NMS_THROW(EBadType{});
-        }
-
-        if (size[0] == 0 && base::$rank == 1) {
-            const auto file_size = is.size();
-            size[0] = (file_size - sizeof(info) - sizeof(size)) / sizeof(T);
-        }
-        Array tmp(size);
-        is.read(tmp.data(), tmp.count());
-        return tmp;
+        return savePath<io::File>(path);
     }
 
     static Array load(const io::Path& path) {
-        io::File file(path, io::File::Read);
-        auto ret = load(file);
-        return ret;
+        return loadPath<io::File>(path);
     }
 #pragma endregion
 
@@ -141,6 +117,44 @@ protected:
 
 private:
     delegate<void()>    deleter_;
+
+    template<class File>
+    void saveFile(File& file) const {
+        const auto info = base::info();
+        const auto size = base::size();
+
+        file.write(&info, 1);
+        file.write(&size, 1);
+        file.write(base::data(), base::count());
+    }
+
+    template<class File>
+    static Array loadFile(const File& file) {
+        u8x4        info;
+        Vec<u32, N> size;
+
+        file.read(&info, 1);
+        file.read(&size, 1);
+        if (info != base::info()) {
+            NMS_THROW(EBadType{});
+        }
+
+        Array tmp(size);
+        file.read(tmp.data(), tmp.count());
+        return tmp;
+    }
+
+    template<class File, class Path>
+    void savePath(const Path& path) const {
+        File file(path, File::Write);
+        saveFile(file);
+    }
+
+    template<class File, class Path>
+    static Array loadPath(const Path& path) {
+        File file(path, File::Read);
+        return loadFile(file);
+    }
 };
 
 }

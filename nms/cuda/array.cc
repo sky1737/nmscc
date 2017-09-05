@@ -39,7 +39,7 @@ nms_test(project) {
     cuda::Array<f32, 2> view({ 64, 64 });
 
     imag <<= lins(0.f, 0.01f, 1.f);
-    view <<= sum(imag);
+    view <<= vsum(imag);
 
     math::Array<f32, 3> host_imag({ 10, 64, 64 });
     math::Array<f32, 2> host_view({ 64, 64 });

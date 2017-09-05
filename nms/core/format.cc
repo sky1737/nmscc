@@ -92,7 +92,7 @@ static void _formatInt(String& buf, const StrView& sfmt, const T& val, const Str
 
     if (sfmt.count()==0) {
         const auto n = snprintf(str, sizeof(str), type.data(), val);
-        const auto s = StrView(str, { u32(n) });
+        const auto s = StrView(str, u32(n));
         buf += s;
     }
     else {
@@ -125,21 +125,21 @@ static void _formatInt(String& buf, const StrView& sfmt, const T& val, const Str
         }
 
         if (fmt.width <= len) {
-            buf += StrView{ str, {len } };
+            buf += StrView{ str, len };
         }
         else {
             switch (fmt.align) {
             case '<':
-                buf+= StrView{ str, {len } };
+                buf+= StrView{ str, len };
                 buf.appends(fmt.width - len, ' ');
                 break;
             case '>': default:
                 buf.appends(fmt.width - len, ' ');
-                buf+= StrView{ str, {len} };
+                buf+= StrView{ str, len };
                 break;
             case '^':
                 buf.appends((fmt.width - len + 0) / 2, ' ');
-                buf+= StrView{ str, {len } };
+                buf+= StrView{ str, len };
                 buf.appends((fmt.width - len + 1) / 2, ' ');
                 break;
             }
@@ -166,21 +166,21 @@ static void _formatFlt(String& buf, const StrView& sfmt, const T& val) {
     }
 
     if (len >= fmt.width) {
-        buf += StrView{ ptr, {len } };
+        buf += StrView{ ptr, len };
     }
     else {
         switch (fmt.align) {
         case '<':
-            buf += StrView{ ptr, {len } };
+            buf += StrView{ ptr, len };
             buf.appends(fmt.width - len, ' ');
             break;
         case '>': default:
             buf.appends(fmt.width - len, ' ');
-            buf += StrView{ ptr, {len } };
+            buf += StrView{ ptr, len };
             break;
         case '^':
             buf.appends((fmt.width - len + 0) / 2, ' ');
-            buf += StrView{ ptr, {len } };
+            buf += StrView{ ptr, len };
             buf.appends((fmt.width - len + 1) / 2, ' ');
             break;
         }

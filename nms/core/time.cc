@@ -113,7 +113,7 @@ NMS_API DateTime DateTime::now() {
 NMS_API DateTime DateTime::parse(StrView str) {
     DateTime dt;
     auto cstr = str.data();
-    sscanf(cstr, "%hu-%hu-%huT%hu:%hu:%hu", &dt.year, &dt.month, &dt.day, &dt.hour, &dt.minute, &dt.second);
+    (void)sscanf(cstr, "%hu-%hu-%huT%hu:%hu:%hu", &dt.year, &dt.month, &dt.day, &dt.hour, &dt.minute, &dt.second);
     return dt;
 }
 

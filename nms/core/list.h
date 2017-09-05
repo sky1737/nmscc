@@ -25,6 +25,7 @@ public:
     using base  = View<T>;
     using Tdata = typename base::Tdata;
     using Tsize = typename base::Tsize;
+    using Tinfo = typename base::Tinfo;
 
 #pragma region constructor
     constexpr List() noexcept
@@ -47,6 +48,11 @@ public:
 
         size_ = 0;
         data_ = nullptr;
+    }
+
+    template<class ...U>
+    explicit List(Tsize count, U&& ...us) {
+        appends(count, fwd<U>(us)...);
     }
 
     List(List&& rhs) noexcept
@@ -165,9 +171,9 @@ public:
         saveFile(*this, file);
     }
 
-    static List load(io::File& file) {
+    static List load(const io::File& file) {
         List list;
-        loadFile(&list, file);
+        loadFile(list, file);
         return list;
     }
 #pragma endregion
@@ -176,6 +182,10 @@ protected:
     using   base::data_;
     using   base::size_;
     using   base::capacity_;
+
+    Tdata* buff() {
+        return reinterpret_cast<Tdata*>(&capacity_ + 1);
+    }
 
     const Tdata* buff() const {
         return reinterpret_cast<const Tdata*>(&capacity_+1);
@@ -187,24 +197,24 @@ protected:
         const auto dims = list.size();
         const auto data = list.data();
         const auto nums = list.count();
-        file.save(&info, 1);
-        file.save(&dims, 1);
-        file.save(data, nums);
+        file.write(&info, 1);
+        file.write(&dims, 1);
+        file.write(data, nums);
     }
 
     template<class File>
     static void loadFile(List& list, const File& file) {
-        typename base::Tinfo info;
-        file.load(&info, 1);
+        Tinfo info;
+        file.read(&info, 1);
         if (info != base::info()) { 
             NMS_THROW(EBadType{});
         }
 
         typename base::Tdims dims;
-        file.load(&dims, 1);
+        file.read(&dims, 1);
 
         list.reserve(dims[0]);
-        file.load(list.data(), dims[0]);
+        file.read(list.data(), dims[0]);
     }
 };
 
@@ -219,62 +229,71 @@ public:
     static const Tsize $capicity = N;
 
 #pragma region constructor
-    constexpr List() noexcept
-    {
-        data_       = static_cast<T*>(buff_);
+    constexpr List() noexcept {
+        data_       = reinterpret_cast<T*>(buff_);
         capacity_   = $capicity;
     }
 
     ~List()
     {}
 
+    template<class ...U>
+    explicit List(Tsize count, U&& ...us)
+        : List{}
+    {
+        appends(count, fwd<U>(us)...);
+    }
+
     List(List&& rhs) noexcept
-        : List{} 
+        : base{ static_cast<base&&>(rhs) }
     {
-        size_ = rhs.size_;
-
-        if (rhs.data_ == rhs.buff_) {
-            data_ = buff_;
-            for (auto i = 0; i < $capicity; ++i) {
-                buff_[i] = rhs.buff_[i];
-            }
-        } else {
-            data_ = rhs.data_;
+        if (data() == rhs.buff()) {
+            dat2buf();
         }
-
-        rhs.data_ = nullptr;
     }
 
-    List(const List& rhs)
-        : List{} 
-    {
-        base::appends(rhs.data(), rhs.count());
+    List& operator=(List&& rhs) noexcept {
+        if (this != &rhs) {
+            base::operator=(static_cast<base&&>(rhs));
+            if (rhs.data() == rhs.buff()) {
+                dat2buf();
+            }
+        }
+        return *this;
     }
-
 #pragma endregion
 
 #pragma region property
     using base::data;
     using base::size;
     using base::count;
+    using base::buff;
+#pragma endregion
 
+#pragma region save/load
+    static List load(const io::File& file) {
+        List list;
+        base::loadFile(list, file);
+        return list;
+    }
 #pragma endregion
 
 protected:
     using   base::data_;
     using   base::size_;
     using   base::capacity_;
-    u8      buff_[sizeof(Tdata)*$capicity];
+    u8      buff_[sizeof(Tdata)*$capicity] = {};
 
-#pragma region save/load
-    static List load(const io::File& file) {
-        List list;
-        base::load(&list, file);
-        return list;
+    void dat2buf() {
+        auto buf = buff();
+        auto dat = data();
+        for (Tsize i = 0; i < size_; ++i) {
+            new(&buf[i]) Tdata(static_cast<Tdata&&>(dat[i]));
+        }
+        data_ = buf;
     }
-#pragma endregion
-};
 
+};
 
 }
 

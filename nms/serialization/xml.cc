@@ -11,7 +11,7 @@ void formatNode(String& buf, const NodeEx& node, i32 level = 0) {
     static const auto $indent = 2;
     buf.appends((level + 0)*$indent, ' ');
 
-    StrView fmt(nullptr, { 0 });
+    StrView fmt;
 
     auto& v = node.val();
 

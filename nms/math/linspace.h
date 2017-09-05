@@ -8,11 +8,9 @@ namespace nms::math
 /* liner */
 template<class T, u32 N>
 struct Linespace
-    : public IView<T, N>
 {
     using Tview = Linespace;
     using Tstep = Vec<T, N>;
-
     constexpr static const auto $rank = N;
 
     Linespace(const T(&step)[N])

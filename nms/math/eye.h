@@ -7,10 +7,11 @@ namespace nms::math
 
 /* Eye */
 template<class T>
-struct Eye: IView<T, 0>
+struct Eye
 {
 public:
-    using Tstep = Eye;
+    using Tview = Eye;
+    constexpr static const auto $rank = 0;
 
     constexpr Eye() = default;
 

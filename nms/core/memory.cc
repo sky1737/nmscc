@@ -66,7 +66,10 @@ extern "C" {
 
     static void munuse(void* ptr, size_t size) {
         const auto mem_decommit = 0x4000;
+#pragma warning(push)
+#pragma warning(disable: 6250)
         ::VirtualFree(ptr, size, mem_decommit);
+#pragma warning(pop)
     }
 
 }

@@ -53,7 +53,7 @@ struct Testor
             }
         }
 
-        return cnt_pos>=0 && cnt_neg ==0;
+        return cnt_pos>0 && cnt_neg ==0;
     }
 
     bool invoke(bool stat) const {
@@ -98,6 +98,12 @@ struct Testor
 
 static auto& gTests() {
     static List<Testor> tests;
+
+    static auto _init = [&] {
+        tests.reserve(1024);
+        return 0;
+    }(); (void)_init;
+
     return tests;
 }
 
@@ -138,7 +144,7 @@ NMS_API u32 invoke(const View<StrView>& masks) {
 )";
     printf("%s", logo);
     auto now = DateTime::now();
-    printf("[ %04d-%02d-%02d %02d:%02d:%02d ]\n", now.year, now.month, now.day, now.hour, now.minute, now.second);
+    printf("[ %04hu-%02hu-%02hu %02hu:%02hu:%02hu ]\n", now.year, now.month, now.day, now.hour, now.minute, now.second);
 
     for (auto& test: tests) {
         auto stat = test.match(masks);

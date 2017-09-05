@@ -20,21 +20,18 @@
   <ItemDefinitionGroup>
     <ClCompile>
       <!--cpp: langauge-->
-      <AdditionalOptions>/utf-8 /std:c++latest  %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/utf-8 /std:c++latest  /analyze %(AdditionalOptions)</AdditionalOptions>
       <WarningLevel>Level3</WarningLevel>
       <!-- optimization -->
       <Optimization Condition="'$(Configuration)'=='Debug'">Disabled</Optimization>
       <Optimization Condition="'$(Configuration)'=='Release'">Full</Optimization>
       <InlineFunctionExpansion Condition="'$(Configuration)'=='Debug'">Disabled</InlineFunctionExpansion>
       <InlineFunctionExpansion Condition="'$(Configuration)'=='Release'">AnySuitable</InlineFunctionExpansion>
-
       <!--debug-->
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-
       <!--library-->
       <RuntimeLibrary Condition="'$(Configuration)'=='Release'">MultiThreaded</RuntimeLibrary>
       <RuntimeLibrary Condition="'$(Configuration)'=='Debug'">MultiThreadedDebug</RuntimeLibrary>
-
       <!-- path -->
       <ObjectFileName>$(IntDir)\%(RelativeDir)\%(FileName)%(Extension).obj</ObjectFileName>
       <AdditionalIncludeDirectories>$(ProjectDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>

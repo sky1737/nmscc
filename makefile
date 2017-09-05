@@ -1,7 +1,7 @@
 
 _CPPPATH        = -I.
 _CPPDEFS        = -DNMS_BUILD
-_CXXFLAGS       = -std=c++1z -Wall -Wno-unknown-pragmas -fPIC $(_CPPPATH) $(_CPPDEFS) 
+_CXXFLAGS       = -x c++ -std=c++1z -Wall -Wno-unknown-pragmas -fPIC $(_CPPPATH) $(_CPPDEFS) 
 
 debug ?= 1
 ifeq ($(debug), 1)

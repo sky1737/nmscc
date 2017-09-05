@@ -14,21 +14,6 @@ extern "C"
 namespace nms::io::console
 {
 
-static const char cuu[] = "\033[1A";
-static const char cud[] = "\033[1B";
-
-static const char cuf[] = "\033[1C";
-static const char cub[] = "\033[1D";
-
-static const char nnl[] = "\033[1E";
-static const char cpl[] = "\033[1F";
-
-static const char cha[] = "\033[1G";
-static const char vpa[] = "\033[1d";
-
-static const char cup[] = "\033[1;1H";
-static const char hvp[] = "\033[1;1f";
-
 static auto _init_console() {
 #ifdef NMS_OS_WINDOWS
     auto hout = ::GetStdHandle(-11);
@@ -67,21 +52,21 @@ NMS_API void goto_line(i32 line) {
         return;
     }
 
-    char cmd[32];
-    auto len = snprintf(cmd, sizeof(cmd), line > 0 ? next_cmd : prev_cmd, abs(line));
-    ::write(1, cmd, len);
+    ::printf(line > 0 ? next_cmd : prev_cmd, abs(line));
+    ::fflush(stdout);
 }
 
 NMS_API void show_cursor(bool value) {
-    static const char hide_cmd[] = "\033[?25l";
     static const char show_cmd[] = "\033[?25h";
+    static const char hide_cmd[] = "\033[?25l";
 
     static auto cond = true;
     if (cond == value || !isterm()) {
         return;
     }
     cond = value;
-    ::write(1, cond ? hide_cmd : show_cmd, sizeof(hide_cmd) - 1);
+    fprintf(stdout, "%s", cond ? show_cmd : hide_cmd);
+    fflush(stdout);
 }
 
 NMS_API void hide_cursor(bool value) {
@@ -91,7 +76,6 @@ NMS_API void hide_cursor(bool value) {
 NMS_API void progress_bar(f32 percent) {
     static const char digits[]      = u8"█▌░";
     static thread_local auto id     = 0u;
-    static thread_local auto cursor = true;
 
     if (!isterm()) {
         return;
@@ -99,18 +83,17 @@ NMS_API void progress_bar(f32 percent) {
 
     id = (id+1)%10;
 
-
     const u16   prog_size = 80;
     const auto  cnts      = (percent+0.001f)*prog_size;
 
-    if (cursor && cnts< prog_size ) {
+    if (cnts< prog_size ) {
         // hide cursor
-        cursor = false;
+        show_cursor(false);
 
     }
     else if(cnts == prog_size) {
         // show cursor
-        cursor = true;
+        show_cursor(true);
     
     }
 

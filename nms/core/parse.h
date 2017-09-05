@@ -45,14 +45,11 @@ __forceinline auto parse_switch(StrView buf, StrView fmt, T& t) {
 }
 
 template<class T>
-auto parse(StrView str, StrView fmt = {}) {
-    T    val;
-    auto ret = parse_switch(str, fmt, val);
-
-    if (ret!=0) {
-        NMS_THROW(EParseFailed{});
+auto parse(StrView str, T default_val=T{}) {
+    if (str.count() != 0) {
+        parse_switch(str, {}, default_val);
     }
-    return val;
+    return default_val;
 }
 
 #pragma endregion

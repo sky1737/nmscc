@@ -7,35 +7,13 @@
 namespace nms
 {
 
-namespace math
-{
-struct Texec;
-
-namespace _view
-{
-template<class T, u32 N>
-struct IView
-{
-    using Tdata = T;
-    using Texec = math::Texec;
-    static const auto $rank = N;
-
-    static constexpr auto rank() {
-        return $rank;
-    }
-};
-
-}
-
-}
-
 template<class T, u32 N = 0>
 struct View;
 
 using StrView = View<const char>;
 
 template<class T, u32 N>
-struct View: public math::_view::IView<T, N>
+struct View
 {
 #pragma region defines
     constexpr static const auto $rank = N;
@@ -354,12 +332,13 @@ template<class T>
 struct View<T, 0>
 {
 #pragma region defines
-    constexpr static const u32 $rank = 0;
+    constexpr static const u32 $rank = 1;
 
     using Tdata = T;
     using Tsize = u32;
     using Trank = u32;
     using Tdims = Vec<u32, $rank>;
+    using Tinfo = u8x4;
 
     template<class U, u32 M>
     friend struct View;
@@ -374,12 +353,14 @@ struct View<T, 0>
 
     /*! construct view with data, size, stride */
     constexpr View(Tdata* data, Tsize size)
-        : data_{ data }, size_{ size } {}
+        : data_{ data }, size_{ size }
+    {}
 
     /*! construct view with data, size, stride */
     template<u32 Isize>
     constexpr View(Tdata(&data)[Isize])
-        : data_{ data }, size_{ ($is<T, char> || $is<T, const char>) ? Isize - 1 : Isize } {}
+        : data_{ data }, size_{ ($is<T, char> || $is<T, const char>) ? Isize - 1 : Isize } {
+    }
 
     /*! convert to const View */
     operator View<const T>() const noexcept {
@@ -389,7 +370,7 @@ struct View<T, 0>
 #pragma endregion
 
 #pragma region properties
-    __forceinline static constexpr Trank rank() {
+    static constexpr Trank rank() {
         return $rank;
     }
 
@@ -543,7 +524,7 @@ struct View<T, 0>
 #pragma endregion
 
 #pragma region save/load
-    __forceinline static u8x4 typeinfo() {
+    static u8x4 info() {
         const auto ch =
             $is<$uint, T> ? 'u' :
             $is<$sint, T> ? 'i' :
@@ -580,6 +561,34 @@ protected:
 
 #pragma endregion
 
+};
+
+template<class T>
+struct Scalar
+{
+    using Trank = u32;
+    using Tsize = u32;
+    using Tdata = T;
+    using Tview = Scalar;
+
+    constexpr static const auto $rank = 0;
+
+    Scalar(const T& t)
+        : t_(t) {
+    }
+
+    template<class I>
+    Tsize size(I idx) const noexcept {
+        return 1u;
+    }
+
+    template<class ...I>
+    const T& operator()(I ...idx) const noexcept {
+        return t_;
+    }
+
+protected:
+    T   t_;
 };
 
 #pragma region make

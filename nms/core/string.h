@@ -9,19 +9,22 @@ namespace nms
 
 NMS_API u32 strlen(const char* s);
 
+inline StrView mkStrView(const char* s) {
+    return {s, strlen(s)};
+}
+
 template<class T, u32 N=0>
 class TString;
 
 /* TString */
 template<class T>
-class TString<T, 0>: public List<T, 0>
+class TString<T, 0> : public List<T, 0>
 {
 public:
     using Tchar = T;
     using base  = List<Tchar>;
     using Tsize = typename base::Tsize;
     using Tdata = typename base::Tdata;
-    using Tview = View<const T>;
 
 public:
 #pragma region constructor
@@ -39,15 +42,19 @@ public:
         : TString{ s, N - 1 } {
     }
 
-    TString(const Tview& rhs)
+    TString(const View<const Tchar>& rhs)
         : TString(rhs.data(), rhs.count()) {
     }
 
-    TString(const TString& rhs)
-        : TString{ rhs.data(), rhs.count() }
-    {}
+    TString(TString&& rhs) noexcept
+        : base(static_cast<base&&>(rhs)) {
+    }
 
-    TString& operator=(const Tview& s) {
+    TString(const TString& rhs) noexcept
+        : TString(rhs.data(), rhs.count())
+    { }
+
+    TString& operator=(const View<const Tchar>& s) {
         base::size_ = 0;
         *this += s;
         return *this;
@@ -56,7 +63,7 @@ public:
     template<u32 SN>
     TString& operator=(const Tchar(&s)[SN]) {
         base::size_ = 0;
-        *this += Tview{ s };
+        *this += View<const Tchar>{ s };
         return *this;
     }
 
@@ -82,22 +89,20 @@ public:
 
     /*! returns a cstring (null terminal) */
     const Tchar* cstr() const {
-        if (base::count() == 0) {
+        if (data_ == nullptr) {
             return nullptr;
         }
 
-        auto& self = const_cast<TString&>(*this);
-        if (base::at(count()-1) != '\0') {
-            const auto oldlen = self.count();
-            const auto newlen = oldlen+1;
-            self.reserve(newlen);
-            self.data()[oldlen] = '\0';
+        if (data_[size_] != '\0') {
+            auto& self = const_cast<TString&>(*this);
+            self.reserve(size_+1);
+            self.data_[size_] = '\0';
         }
-        return base::data();
+        return data_;
     }
 #pragma endregion 
 
-    TString& operator+=(const Tview& s) {
+    TString& operator+=(const View<const Tchar>& s) {
         base::appends(s.data(), s.count());
         return *this;
     }
@@ -105,6 +110,13 @@ public:
     TString& operator+=(Tchar c) {
         base::append(c);
         return *this;
+    }
+
+    template<class U>
+    TString operator+(U&& u) const {
+        TString tmp(*this);
+        tmp += fwd<U>(u);
+        return tmp;
     }
 
     /*! find the first index of c */
@@ -131,7 +143,6 @@ public:
     using base  = TString<T, 0>;
     using Tsize = typename base::Tsize;
     using Tdata = typename base::Tdata;
-    using Tview = View<const T>;
 
     static const auto $capicity = N;
 
@@ -157,26 +168,16 @@ public:
         : TString{ s, SN - 1 }
     {}
 
-    TString(const Tview& rhs)
-        : TString(rhs.data(), rhs.count())
+    TString(const View<const Tchar>& rhs)
+        : TString{ rhs.data(), rhs.count() }
     {}
 
     TString(TString&& rhs) noexcept
-        : TString{}
+        : base(static_cast<base&&>(rhs))
     {
-        size_ = rhs.size_;
-        if (rhs.data_ == rhs.buff_) {
-            data_ = buff_;
-            for (u32 i = 0; i < $capicity; ++i) {
-                buff_[i] = rhs.buff_[i];
-            }
+        if (data_ == rhs.buff_) {
+            dat2buf();
         }
-        else {
-            data_ = rhs.data_;
-        }
-
-
-        rhs.data_ = nullptr;
     }
 
     TString(const TString& rhs)
@@ -184,7 +185,16 @@ public:
     {}
 
 
-    TString& operator=(const Tview& s) {
+    TString& operator=(TString&& rhs) noexcept {
+        if (this != &rhs) {
+            base::oeprator = (static_cast<base&&>(rhs));
+            if (data_ == rhs.buff_) {
+                dat2buf();
+            }
+        }
+        return *this;
+    }
+    TString& operator=(const View<const Tchar>& s) {
         base::operator=(s);
         return *this;
     }
@@ -195,6 +205,13 @@ public:
         return *this;
     }
 
+    template<class U>
+    TString operator+(U&& u) const {
+        TString tmp(*this);
+        tmp += fwd<U>(u);
+        return tmp;
+    }
+
 #pragma endregion
 
 protected:
@@ -202,6 +219,15 @@ protected:
     using base::capacity_;
     using base::data_;
     Tchar buff_[$capicity] = {};
+
+    void dat2buf() {
+        auto buf = buff_;
+        auto dat = data_;
+        for (Tsize i = 0; i < size_; ++i) {
+            new(&buf[i]) Tdata(static_cast<Tdata&&>(dat[i]));
+        }
+        data_ = buf;
+    }
 };
 
 /* split a TString into pieces */
