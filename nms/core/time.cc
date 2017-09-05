@@ -122,5 +122,3 @@ NMS_API void DateTime::format(String& buff, StrView fmt) const {
 }
 
 }
-
-

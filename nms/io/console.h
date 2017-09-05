@@ -20,6 +20,19 @@ NMS_API void writes(const StrView texts[], u32 n);
 
 namespace
 {
+
+/* --- table --- */
+//   ┌─┬─┐   lqwqk
+//  │├─┼─┤ x tqnqu
+//   └─┴─┘   mqvqj
+/* ------------- */             
+
+/* --- cursor --- */
+//      A
+//   D ─┼─ C
+//      B
+/* -------------- */
+
 static const StrView $rst = "\033[0m";
 static const StrView $bld = "\033[1m";
 static const StrView $clr = "\033[2J";

@@ -81,9 +81,9 @@ struct Testor
                 const auto stacks_cnt = stacks.count();
                 for (auto i = 0u; i < stacks_cnt; ++i) {
                     (i + 1 != stacks_cnt)
-                        ? sformat(str, StrView(u8"\t ├─{:2}: {}\n"), i, stacks[i])
-                        : sformat(str, StrView(u8"\t └─{:2}: {}"),   i, stacks[i]);
-                }
+                        ? sformat(str, StrView("\t \033(0tq\033(B{:2}: {}\n"), i, stacks[i])
+                        : sformat(str, StrView("\t \033(0mq\033(B{:2}: {}"),   i, stacks[i]);
+               }
                 console::writeln(str);
             }
 
@@ -171,7 +171,7 @@ NMS_API u32 invoke(const View<StrView>& masks) {
     console::writeln("\033[1;33m[ignore]\033[0m {}", ignore_count);
     console::writeln("\033[1;31m[fail  ]\033[0m {}", fail_count);
     for(auto test: failes) {
-        console::writeln("  ├─{}", test->name);
+        console::writeln("  \033(0tq\033(B{}", test->name);
     }
     console::writeln("[===== nms.test ======]");
     return fail_count;

@@ -49,11 +49,20 @@
 #include <math.h>
 
 // c++11 threads
-#if defined(NMS_OS_WINDOWS)
+#ifdef NMS_OS_WINDOWS
 using thrd_t = struct thrd_st*;
 using mtx_t  = struct mtx_st*;
 using cnd_t  = struct cnd_st*;
-#elif defined(NMS_OS_MACOS)
+#endif
+
+
+#ifdef NMS_OS_APPLE
+#ifdef NMS_BUILD
+using thrd_t = pthread_t;
+using mtx_t  = pthread_mutex_t;
+using cnd_t  = pthread_cond_t;
+#else
+
 using thrd_t = struct pthread_st*;
 
 struct mtx_t {
@@ -65,11 +74,13 @@ struct cnd_t {
     long sig;
     char opaque[40];
 };
-#elif defined(NMS_OS_LINUX)
+#endif
+#endif
+
+#ifdef NMS_OS_LINUX
 #include <pthread.h>
 #include <semaphore.h>
 using thrd_t = pthread_t;
 using mtx_t  = pthread_mutex_t;
 using cnd_t  = pthread_cond_t;
 #endif
-

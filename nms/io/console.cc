@@ -97,11 +97,9 @@ NMS_API void progress_bar(f32 percent) {
     
     }
 
-
     char prog_bar[1024];
     u32  real_cnt = 0;
 
-    prog_bar[real_cnt++] = '\r';
     for (u16 i = 0; i < prog_size; ++i) {
         if (cnts > i) {
             prog_bar[real_cnt++] = digits[0];
@@ -122,8 +120,9 @@ NMS_API void progress_bar(f32 percent) {
     prog_bar[real_cnt++] = ' ';
     prog_bar[real_cnt++] = ' ';
 
-    real_cnt += snprintf(prog_bar + real_cnt, 10, "%.2f%%", percent*100.f);
-    fwrite(prog_bar, real_cnt, 1, stdout);
+    auto stat = printf("\033[512E%s%.2f %%", prog_bar, percent*100.f);
+    fflush(stdout);
+    (void)stat;
 }
 
 nms_test(progress_bar) {

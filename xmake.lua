@@ -27,15 +27,17 @@ target("nms")
     set_kind("shared")
 
     -- set flags
-    add_cxxflags("-std=c++1z", "-frtti", "-isystem .", "-DNMS_BUILD")
+    add_cxxflags("-std=c++1z", "-frtti", "-DNMS_BUILD")
 
     -- add files
     add_files("nms/**.cc")
-    -- set_pcxxheader("nms/config.h")
+    add_includedirs(".")
+    set_pcxxheader("nms/config.h")
 
     -- build dir
     set_targetdir("publish/bin")
     set_objectdir("/tmp/nmscc")
+
 -- add target
 target("nms.test")
 
@@ -43,12 +45,11 @@ target("nms.test")
     set_kind("binary")
 
     -- set flags
-    add_cxxflags("-std=c++1z", "-frtti", "-isystem .")
+    add_cxxflags("-std=c++1z", "-frtti", "-I .")
+    add_includedirs(".")
     set_targetdir("publish/bin")
     set_objectdir("/tmp/nmscc")
 
     -- add files
     add_deps("nms")
     add_files("nms.test/**.cc")
-
-
